@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using System.Threading;
 
 public class McChunkFactory:ChunkFactory
 {
@@ -20,8 +21,8 @@ public class McChunkFactory:ChunkFactory
 
     private Vector4[] dotField;
     
-    private  IScalerFieldGenerator scalerFieldGenerator;
-    private  IScalerFieldDownSampler downSampler;
+    private IScalerFieldGenerator scalerFieldGenerator;
+    private IScalerFieldDownSampler downSampler;
     
     private float downSampleRate;
     

@@ -1,17 +1,14 @@
 // Each #kernel tells which function to compile; you can have many kernels
 #pragma kernel CSMain
+#include "Includes/Utility.hlsl"
 
 int3 oldDotFieldCount;
 int3 newDotFieldCount;
 float3 newCellSize;
 
-int GetPointIndex(const int x,const int y,const int z,int3 size)
-{
-    return x + y * size.x + z * size.x * size.y;
-}
 
 
-RWStructuredBuffer<float4> oldDotField;
+StructuredBuffer<float4> oldDotField;
 RWStructuredBuffer<float4> newDotField;
 
 [numthreads(8,8,8)]

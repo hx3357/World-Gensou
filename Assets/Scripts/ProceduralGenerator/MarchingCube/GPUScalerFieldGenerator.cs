@@ -5,7 +5,7 @@ using UnityEngine;
 public class GPUScalerFieldGenerator : IScalerFieldGenerator
 {
     private Vector3 origin;
-    private Vector3Int size;
+    private Vector3Int dotFieldCount;
     private Vector3 cellsize;
     
     protected object[] parameters;
@@ -18,20 +18,10 @@ public class GPUScalerFieldGenerator : IScalerFieldGenerator
         cs = m_cs;
         parameters = m_parameters;
     }
-    
-    public object[] GetParameters()
-    {
-        return parameters;
-    }
-    
-    public void SetParameters(params object[] m_parameters)
-    {
-        parameters = m_parameters;
-    }
 
     void InitBuffer()
     {
-        outputPointBuffer = new ComputeBuffer(size.x*size.y*size.z, sizeof(float)*4);
+        outputPointBuffer = new ComputeBuffer(dotFieldCount.x*dotFieldCount.y*dotFieldCount.z, sizeof(float)*4);
     }
     
     void ReleaseBuffer()
@@ -42,23 +32,23 @@ public class GPUScalerFieldGenerator : IScalerFieldGenerator
     void RunNoiseComputeShader()
     {
         int kernel = cs.FindKernel("CSMain");
-        cs.SetInts("size", size.x, size.y, size.z);
+        cs.SetInts("dotFieldCount", dotFieldCount.x, dotFieldCount.y, dotFieldCount.z);
         cs.SetVector("origin",  origin);
         cs.SetVector("cellSize", cellsize);
         cs.SetBuffer(kernel, "outputPoints", outputPointBuffer);
-        cs.Dispatch(kernel, size.x/8, size.y/8, size.z/8);
+        cs.Dispatch(kernel, dotFieldCount.x/8, dotFieldCount.y/8, dotFieldCount.z/8);
     }
 
     public virtual Vector4[] GenerateDotField( Vector3 m_origin,Vector3Int m_size, Vector3 m_cellsize)
     {
         origin = m_origin;
-        size = m_size;
+        dotFieldCount = m_size;
         cellsize = m_cellsize;
+        InitBuffer();
+        RunNoiseComputeShader();
+        Vector4[] dotField = new Vector4[dotFieldCount.x*dotFieldCount.y*dotFieldCount.z];
+        outputPointBuffer.GetData(dotField);
+        ReleaseBuffer();
         return null;
-    }
-
-    public void ShowDotFieldGizmos()
-    {
-        
     }
 }

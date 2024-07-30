@@ -1,9 +1,8 @@
-#include "Includes/MCTable.hlsl"
-#include "Includes/Utility.hlsl"
-
 // Each #kernel tells which function to compile; you can have many kernels
 #pragma kernel CSMain
 
+#include "Includes/MCTable.hlsl"
+#include "Includes/Utility.hlsl"
 
 static const int numofThreads = 8;
 
@@ -25,11 +24,6 @@ struct Triangle
 RWStructuredBuffer<float4> inputPoints;
 AppendStructuredBuffer<Triangle> outputTriangles;
 
-int GetPointIndex(const int x,const int y,const int z)
-{
-    return x + y * size.x + z * size.x * size.y;
-}
-
 
 float3 LerpEdgeEnd(const float4 v1,const float4 v2)
 {
@@ -43,14 +37,14 @@ void CSMain (uint3 id : SV_DispatchThreadID)
     if(id.x >= size.x-1 || id.y >= size.y-1 || id.z >= size.z-1)
         return;
     float4 cubeValues[8] = {
-        inputPoints[GetPointIndex(id.x,id.y,id.z)],
-        inputPoints[GetPointIndex(id.x+1,id.y,id.z)],
-        inputPoints[GetPointIndex(id.x+1,id.y,id.z+1)],
-        inputPoints[GetPointIndex(id.x,id.y,id.z+1)],
-        inputPoints[GetPointIndex(id.x,id.y+1,id.z)],
-        inputPoints[GetPointIndex(id.x+1,id.y+1,id.z)],
-        inputPoints[GetPointIndex(id.x+1,id.y+1,id.z+1)],
-        inputPoints[GetPointIndex(id.x,id.y+1,id.z+1)]
+        inputPoints[GetPointIndex(id.x,id.y,id.z,size)],
+        inputPoints[GetPointIndex(id.x+1,id.y,id.z,size)],
+        inputPoints[GetPointIndex(id.x+1,id.y,id.z+1,size)],
+        inputPoints[GetPointIndex(id.x,id.y,id.z+1,size)],
+        inputPoints[GetPointIndex(id.x,id.y+1,id.z,size)],
+        inputPoints[GetPointIndex(id.x+1,id.y+1,id.z,size)],
+        inputPoints[GetPointIndex(id.x+1,id.y+1,id.z+1,size)],
+        inputPoints[GetPointIndex(id.x,id.y+1,id.z+1,size)]
     };
     uint cubeIndex = 0;
     if(cubeValues[0].w < isoSurface) cubeIndex |= 1;

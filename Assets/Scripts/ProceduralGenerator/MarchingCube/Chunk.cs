@@ -7,8 +7,10 @@ using UnityEngine.Serialization;
 public class Chunk : MonoBehaviour
 {
     public Vector3 origin;
+    public Vector3 center;
     public Vector3Int chunkSize;
     public Vector3 cellSize;
+    public Vector3Int chunkCoord;
     
     public bool isShowVolumeGizmo = true;
     
@@ -35,6 +37,7 @@ public class Chunk : MonoBehaviour
     public void SetVolume(Vector3 m_origin,Vector3Int m_cellCounts,Vector3 m_cellSize)
     {
         origin = m_origin;
+        center = origin + new Vector3((m_cellCounts.x-1)*m_cellSize.x/2,(m_cellCounts.y-1)*m_cellSize.y/2,(m_cellCounts.z-1)*m_cellSize.z/2);
         chunkSize = m_cellCounts;
         cellSize = m_cellSize;
         volumeSize = new Vector3((chunkSize.x) * cellSize.x, (chunkSize.y) * cellSize.y, (chunkSize.z) * cellSize.z);
