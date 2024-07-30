@@ -1,0 +1,79 @@
+#include "Includes/MCTable.hlsl"
+#include "Includes/Utility.hlsl"
+
+// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel CSMain
+
+
+static const int numofThreads = 8;
+
+float isoSurface;
+//when the lerped triangle vertice getting closer to the point with positive value,
+//this parameter is getting closer to 1
+float lerpParam;
+uint3 size;
+
+struct Triangle
+{
+    float3 p1;
+    float3 p2;
+    float3 p3;
+};
+
+// Create a RenderTexture with enableRandomWrite flag and set it
+// with cs.SetTexture
+RWStructuredBuffer<float4> inputPoints;
+AppendStructuredBuffer<Triangle> outputTriangles;
+
+int GetPointIndex(const int x,const int y,const int z)
+{
+    return x + y * size.x + z * size.x * size.y;
+}
+
+
+float3 LerpEdgeEnd(const float4 v1,const float4 v2)
+{
+    float a = 1/(v1.w-v2.w);
+    return v1*(isoSurface-v2.w)*a + v2*(v1.w-isoSurface)*a;
+}
+
+[numthreads(numofThreads,numofThreads,numofThreads)]
+void CSMain (uint3 id : SV_DispatchThreadID)
+{
+    if(id.x >= size.x-1 || id.y >= size.y-1 || id.z >= size.z-1)
+        return;
+    float4 cubeValues[8] = {
+        inputPoints[GetPointIndex(id.x,id.y,id.z)],
+        inputPoints[GetPointIndex(id.x+1,id.y,id.z)],
+        inputPoints[GetPointIndex(id.x+1,id.y,id.z+1)],
+        inputPoints[GetPointIndex(id.x,id.y,id.z+1)],
+        inputPoints[GetPointIndex(id.x,id.y+1,id.z)],
+        inputPoints[GetPointIndex(id.x+1,id.y+1,id.z)],
+        inputPoints[GetPointIndex(id.x+1,id.y+1,id.z+1)],
+        inputPoints[GetPointIndex(id.x,id.y+1,id.z+1)]
+    };
+    uint cubeIndex = 0;
+    if(cubeValues[0].w < isoSurface) cubeIndex |= 1;
+    if(cubeValues[1].w < isoSurface) cubeIndex |= 2;
+    if(cubeValues[2].w < isoSurface) cubeIndex |= 4;
+    if(cubeValues[3].w < isoSurface) cubeIndex |= 8;
+    if(cubeValues[4].w < isoSurface) cubeIndex |= 16;
+    if(cubeValues[5].w < isoSurface) cubeIndex |= 32;
+    if(cubeValues[6].w < isoSurface) cubeIndex |= 64;
+    if(cubeValues[7].w < isoSurface) cubeIndex |= 128;
+ 
+    for(int i=0;triTable[cubeIndex][i]!=-1;i+=3)
+    {
+        const float4 p1_end_pointA = cubeValues[cornerIndexAFromEdge[triTable[cubeIndex][i]]];
+        const float4 p1_end_pointB = cubeValues[cornerIndexBFromEdge[triTable[cubeIndex][i]]];
+        const float4 p2_end_pointA = cubeValues[cornerIndexAFromEdge[triTable[cubeIndex][i+1]]];
+        const float4 p2_end_pointB = cubeValues[cornerIndexBFromEdge[triTable[cubeIndex][i+1]]];
+        const float4 p3_end_pointA = cubeValues[cornerIndexAFromEdge[triTable[cubeIndex][i+2]]];
+        const float4 p3_end_pointB = cubeValues[cornerIndexBFromEdge[triTable[cubeIndex][i+2]]];
+        Triangle t;
+        t.p1 =  LerpEdgeEnd(p1_end_pointA,p1_end_pointB);
+        t.p2 = LerpEdgeEnd(p2_end_pointA,p2_end_pointB);
+        t.p3 = LerpEdgeEnd(p3_end_pointA,p3_end_pointB);
+        outputTriangles.Append(t);
+    }
+}

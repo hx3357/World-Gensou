@@ -1,0 +1,21 @@
+// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel CSMain
+
+float3 origin;
+int3 size;
+float3 cellSize;
+
+int GetPointIndex(const int x,const int y,const int z)
+{
+    return x + y * size.x + z * size.x * size.y;
+}
+
+// Create a RenderTexture with enableRandomWrite flag and set it
+// with cs.SetTexture
+RWStructuredBuffer<float4> outputPoints;
+
+[numthreads(8,8,8)]
+void CSMain (uint3 id : SV_DispatchThreadID)
+{
+    
+}

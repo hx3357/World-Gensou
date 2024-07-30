@@ -1,0 +1,43 @@
+// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel CSMain
+
+int3 oldDotFieldCount;
+int3 newDotFieldCount;
+float3 newCellSize;
+
+int GetPointIndex(const int x,const int y,const int z,int3 size)
+{
+    return x + y * size.x + z * size.x * size.y;
+}
+
+
+RWStructuredBuffer<float4> oldDotField;
+RWStructuredBuffer<float4> newDotField;
+
+[numthreads(8,8,8)]
+void CSMain (uint3 id : SV_DispatchThreadID)
+{
+    if(id.x >= newDotFieldCount.x || id.y >= newDotFieldCount.y || id.z >= newDotFieldCount.z)
+        return;
+    float3 newDotFieldPosition = float3(id.x,id.y,id.z)*newCellSize;
+    int3 surroundingCubePosition = (int3)newDotFieldPosition;
+    float4 surroundingCube[8];
+    for(int i = 0; i < 8; i++)
+    {
+        int x_index = surroundingCubePosition.x + (i & 1);
+        x_index = x_index >= oldDotFieldCount.x ? oldDotFieldCount.x - 1 : x_index;
+        int y_index = surroundingCubePosition.y + ((i & 2) >> 1);
+        y_index = y_index >= oldDotFieldCount.y ? oldDotFieldCount.y - 1 : y_index;
+        int z_index = surroundingCubePosition.z + ((i & 4) >> 2);
+        z_index = z_index >= oldDotFieldCount.z ? oldDotFieldCount.z - 1 : z_index;
+        surroundingCube[i] = oldDotField[GetPointIndex(x_index,y_index,z_index,oldDotFieldCount)];
+    }
+    float3 lerpParam = (newDotFieldPosition - (float3)surroundingCubePosition) / newCellSize;
+    const float4 p00 = lerp(surroundingCube[0],surroundingCube[4],lerpParam.z);
+    const float4 p01 = lerp(surroundingCube[1],surroundingCube[5],lerpParam.z);
+    const float4 p10 = lerp(surroundingCube[2],surroundingCube[6],lerpParam.z);
+    const float4 p11 = lerp(surroundingCube[3],surroundingCube[7],lerpParam.z);
+    const float4 p0 = lerp(p00,p10,lerpParam.y);
+    const float4 p1 = lerp(p01,p11,lerpParam.y);
+    newDotField[GetPointIndex(id.x,id.y,id.z,newDotFieldCount)] = lerp(p0,p1,lerpParam.x);
+}
