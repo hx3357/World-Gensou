@@ -1,16 +1,13 @@
-using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics;
 using UnityEngine;
-using System.Threading;
-using Debug = UnityEngine.Debug;
+
 
 public class McChunkFactory: MonoBehaviour, IChunkFactory
 {
      protected Vector3 origin;
     
      protected Mesh chunkMesh;
-     Material chunkMaterial;
+     protected Material chunkMaterial;
     
     private const int numofThreads = 8;
 
@@ -19,8 +16,8 @@ public class McChunkFactory: MonoBehaviour, IChunkFactory
     private ComputeBuffer pointBuffer;
     private ComputeBuffer triangleBuffer;
     
-    private float isoSurface;
-    private float lerpParam;
+    protected float isoSurface;
+    protected float lerpParam;
     
     private Vector3Int dotFieldSize;
     protected Vector3Int chunkSize;
@@ -31,37 +28,19 @@ public class McChunkFactory: MonoBehaviour, IChunkFactory
     protected Triangle[] triangles;
     protected int triangleCount;
     
-    private IScalerFieldGenerator scalerFieldGenerator;
-    private IScalerFieldDownSampler downSampler;
+    protected IScalerFieldGenerator scalerFieldGenerator;
+    protected IScalerFieldDownSampler downSampler;
     
     private float downSampleRate;
     
-    public void SetParameters(ComputeShader m_cs,IScalerFieldGenerator m_scalerFieldGenerator)
-    {
-        this.cs = m_cs;
-        this.scalerFieldGenerator = m_scalerFieldGenerator;
-    }
-    
-    public void SetParameters(ComputeShader m_cs,IScalerFieldGenerator m_scalerFieldGenerator,
-        float m_downSampleRate,IScalerFieldDownSampler m_downSampler)
-    {
-        this.cs = m_cs;
-        this.scalerFieldGenerator = m_scalerFieldGenerator;
-        this.downSampler = m_downSampler;
-        this.downSampleRate = m_downSampleRate;
-    }
-    
-    public void SetDownSampler(IScalerFieldDownSampler m_downSampler,float m_downSampleRate)
-    {
-        downSampler = m_downSampler;
-        downSampleRate = m_downSampleRate;
-    }
-    
-    public void DrawDotFieldGizmos()
-    {
-        Utility.ShowDotFieldGizmos(dotFieldSize,dotField);
-    }
-    
+    private static readonly int Size = Shader.PropertyToID("size");
+    private static readonly int IsoSurface = Shader.PropertyToID("isoSurface");
+    private static readonly int LerpParam = Shader.PropertyToID("lerpParam");
+    private static readonly int InputPoints = Shader.PropertyToID("inputPoints");
+    private static readonly int OutputTriangles = Shader.PropertyToID("outputTriangles");
+
+    #region PrivateField
+
     void InitBuffer()
     {
         pointBuffer = new ComputeBuffer(dotFieldSize.x*dotFieldSize.y*dotFieldSize.z, sizeof(float)*4);
@@ -79,11 +58,11 @@ public class McChunkFactory: MonoBehaviour, IChunkFactory
     void RunMarchingCubeComputeShader()
     {
         int kernel = cs.FindKernel("CSMain");
-        cs.SetInts("size", dotFieldSize.x, dotFieldSize.y, dotFieldSize.z);
-        cs.SetFloat("isoSurface", isoSurface);
-        cs.SetFloat("lerpParam", lerpParam);
-        cs.SetBuffer(kernel,"inputPoints",pointBuffer);
-        cs.SetBuffer(kernel, "outputTriangles", triangleBuffer);
+        cs.SetInts(Size, dotFieldSize.x, dotFieldSize.y, dotFieldSize.z);
+        cs.SetFloat(IsoSurface, isoSurface);
+        cs.SetFloat(LerpParam, lerpParam);
+        cs.SetBuffer(kernel,InputPoints,pointBuffer);
+        cs.SetBuffer(kernel, OutputTriangles, triangleBuffer);
         cs.Dispatch(kernel, Mathf.CeilToInt(dotFieldSize.x / (float)numofThreads), 
             Mathf.CeilToInt(dotFieldSize.y / (float)numofThreads), 
             Mathf.CeilToInt(dotFieldSize.z / (float)numofThreads));
@@ -143,7 +122,7 @@ public class McChunkFactory: MonoBehaviour, IChunkFactory
         chunkMesh.RecalculateNormals();
     }
     
-    Chunk CreateChunkObject()
+    protected Chunk CreateChunkObject()
     {
         GameObject chunkObject = new GameObject("Chunk")
         {
@@ -159,19 +138,20 @@ public class McChunkFactory: MonoBehaviour, IChunkFactory
         return chunk;
     }
     
+    
     protected void PrepareChunkMesh(Vector3 m_origin, Vector3Int m_chunkSize, Vector3 m_cellSize,
         float m_isoSurface, float m_lerpParam)
     {
-        this.origin = m_origin;
-        this.dotFieldSize = new Vector3Int(m_chunkSize.x+1,m_chunkSize.y+1,m_chunkSize.z+1);
-        this.chunkSize =m_chunkSize;
-        this.cellSize = m_cellSize;
-        this.isoSurface = m_isoSurface;
-        this.lerpParam = m_lerpParam;
-        this.cellSize = m_cellSize;
-        dotField = scalerFieldGenerator.GenerateDotField(origin,dotFieldSize, cellSize);
-        if(downSampler!=null)
-            dotField = downSampler.DownSample(dotField,dotFieldSize,cellSize,downSampleRate, out dotFieldSize,out chunkSize,out cellSize);
+        origin = m_origin;
+        dotFieldSize = new Vector3Int(m_chunkSize.x+1,m_chunkSize.y+1,m_chunkSize.z+1);
+        chunkSize =m_chunkSize;
+        cellSize = m_cellSize;
+        isoSurface = m_isoSurface;
+        lerpParam = m_lerpParam;
+        cellSize = m_cellSize;
+
+        dotField = scalerFieldGenerator.GenerateDotField(origin, dotFieldSize, cellSize);
+        dotField = downSampler?.DownSample(dotField,dotFieldSize,cellSize,downSampleRate, out dotFieldSize,out chunkSize,out cellSize);
         InitBuffer();
         pointBuffer.SetData(dotField);
         RunMarchingCubeComputeShader();
@@ -181,20 +161,97 @@ public class McChunkFactory: MonoBehaviour, IChunkFactory
         ReleaseBuffer();
     }
 
-    public Chunk ProduceChunk(Vector3 m_center,Vector3Int m_chunkSize,Vector3 m_cellSize,float m_isoSurface,float m_lerpParam,Material m_chunkMaterial=null)
+    #endregion
+
+    #region ExposingAPI   
+
+    public virtual Chunk ProduceChunk(Vector3 m_center, Vector3Int m_chunkSize, Vector3 m_cellSize, Material m_chunkMaterial = null)
     {
-        PrepareChunkMesh(m_center,m_chunkSize,m_cellSize,m_isoSurface,m_lerpParam);
+        PrepareChunkMesh(m_center,m_chunkSize,m_cellSize,isoSurface,lerpParam);
         GenerateLitMesh();
-        chunkMaterial = chunkMaterial!=null ? m_chunkMaterial : new Material(Shader.Find("Universal Render Pipeline/Lit"));
+        chunkMaterial = m_chunkMaterial!=null ? m_chunkMaterial : new Material(Shader.Find("Universal Render Pipeline/Lit"));
         return CreateChunkObject();
     }
     
-    public virtual void SetChunkMesh(Chunk chunk,Vector3 m_center,Vector3Int m_chunkSize,Vector3 m_cellSize,float m_isoSurface,float m_lerpParam)
+    public Chunk ProduceChunk(Vector3 m_center,Material m_chunkMaterial=null)
     {
-        PrepareChunkMesh(m_center,m_chunkSize,m_cellSize,m_isoSurface,m_lerpParam);
+       return ProduceChunk(m_center,IChunkFactory.universalChunkSize,IChunkFactory.universalCellSize,m_chunkMaterial);
+    }
+    
+    public Chunk ProduceChunk(Vector3Int chunkCoord, Chunk.LODLevel lodLevel ,Material m_chunkMaterial = null)
+    {
+        SetDownSampler(downSampler,(float)lodLevel);
+        Chunk chunk = ProduceChunk(Chunk.GetChunkOriginByCoord(chunkCoord), IChunkFactory.universalChunkSize, 
+            IChunkFactory.universalCellSize, m_chunkMaterial);
+        chunk.chunkCoord = chunkCoord;
+        return chunk;
+    }
+    
+    public Chunk ProduceChunk(Vector3Int chunkCoord, Material m_chunkMaterial = null)
+    {
+        Chunk chunk = ProduceChunk(Chunk.GetChunkOriginByCoord(chunkCoord),IChunkFactory.universalChunkSize, 
+            IChunkFactory.universalCellSize, m_chunkMaterial);
+        chunk.chunkCoord = chunkCoord;
+        return chunk;
+    }
+    
+    public virtual void SetChunk(Chunk chunk,Vector3 m_center,Vector3Int m_chunkSize,
+        Vector3 m_cellSize)
+    {
+        PrepareChunkMesh(m_center,m_chunkSize,m_cellSize,isoSurface,lerpParam);
         GenerateLitMesh();
         chunk.SetVolume(origin,chunkSize,cellSize);
         chunk.SetMesh(chunkMesh);
     }
+    
+    public virtual void SetChunk(Chunk chunk,Chunk.LODLevel lodLevel)
+    {
+        SetDownSampler(downSampler,(float)lodLevel);
+        PrepareChunkMesh(chunk.origin,IChunkFactory.universalChunkSize,IChunkFactory.universalCellSize,isoSurface,lerpParam);
+        GenerateLitMesh();
+        chunk.SetVolume(origin,chunkSize,cellSize);
+        chunk.SetMesh(chunkMesh);
+    }
+    
+    public virtual void SetChunk(Chunk chunk)
+    {
+        PrepareChunkMesh(chunk.origin,IChunkFactory.universalChunkSize,IChunkFactory.universalCellSize,isoSurface,lerpParam);
+        GenerateLitMesh();
+        chunk.SetVolume(origin,chunkSize,cellSize);
+        chunk.SetMesh(chunkMesh);
+    }
+    
+    public void SetParameters(IScalerFieldGenerator m_scalerFieldGenerator)
+    {
+        this.scalerFieldGenerator = m_scalerFieldGenerator;
+    }
+    
+    public void SetParameters(IScalerFieldGenerator m_scalerFieldGenerator,
+        float m_downSampleRate,IScalerFieldDownSampler m_downSampler)
+    {
+        this.scalerFieldGenerator = m_scalerFieldGenerator;
+        this.downSampler = m_downSampler;
+        this.downSampleRate = m_downSampleRate;
+    }
+    
+    public void SetExclusiveParameters(ComputeShader m_cs,float m_isoSurface,float m_lerpParam)
+    {
+        cs = m_cs;
+        isoSurface = m_isoSurface;
+        lerpParam = m_lerpParam;
+    }
+    
+    public void SetDownSampler(IScalerFieldDownSampler m_downSampler,float m_downSampleRate)
+    {
+        downSampler = m_downSampler;
+        downSampleRate = m_downSampleRate;
+    }
+    
+    public void DrawDotFieldGizmos()
+    {
+        ProcedualGeneratorUtility.ShowDotFieldGizmos(dotFieldSize,dotField);
+    }
+
+    #endregion
     
 }

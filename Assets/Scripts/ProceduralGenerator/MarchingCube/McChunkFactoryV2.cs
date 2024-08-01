@@ -7,7 +7,7 @@ using Unity.Collections;
 using Unity.Burst;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Mathematics;
-using Unity.VisualScripting;
+using Debug = UnityEngine.Debug;
 
 public class McChunkFactoryV2 : McChunkFactory
 {
@@ -58,7 +58,9 @@ public class McChunkFactoryV2 : McChunkFactory
             int currentVertexIndex = 0;
             foreach (var triangle in triangles)
             {
-                if(triangle.p1.Equals(float3.zero) && triangle.p2.Equals(float3.zero) && triangle.p3.Equals(float3.zero))
+                if(triangle.p1.Equals(float3.zero) && 
+                   triangle.p2.Equals(float3.zero) && 
+                   triangle.p3.Equals(float3.zero))
                     break;
                 if (!vertexIndexMap.ContainsKey(triangle.p1))
                 {
@@ -87,7 +89,7 @@ public class McChunkFactoryV2 : McChunkFactory
 
     private Stopwatch sw;
     
-    IEnumerator DispatchMeshGenerationJobCoroutine()
+    IEnumerator DispatchMeshGenerationJobCoroutine(Chunk chunk)
     {
         GenerateMeshJob job = new()
         {
@@ -98,28 +100,38 @@ public class McChunkFactoryV2 : McChunkFactory
         };
         JobHandle handle = job.Schedule();
         while (!handle.IsCompleted)
-        {
             yield return null;
-        }
         handle.Complete();
         chunkMesh = new();
-        chunkMesh.vertices =new Vector3[job.vertices.Length];
-        job.vertices.AsArray().Reinterpret<Vector3>().CopyTo(chunkMesh.vertices);
-        chunkMesh.triangles = job.indices.ToArray();
+        Vector3[] vertices = new Vector3[job.vertices.Length];
+        int[] indices = new int[job.indices.Length];
+        job.vertices.AsArray().Reinterpret<Vector3>().CopyTo(vertices);
+        job.indices.AsArray().CopyTo(indices);
         job.vertices.Dispose();
         job.indices.Dispose();
         job.triangles.Dispose();
         job.vertexIndexMap.Dispose();
+        chunkMesh.vertices = vertices;
+        chunkMesh.triangles = indices;
         chunkMesh.RecalculateNormals();
         chunkMesh.RecalculateBounds();
         chunkMesh.RecalculateTangents();
+        chunk.SetMesh(chunkMesh);
     }
 
-    public override void SetChunkMesh(Chunk chunk, Vector3 m_center, Vector3Int m_chunkSize, Vector3 m_cellSize, float m_isoSurface,
-        float m_lerpParam)
+    public override Chunk ProduceChunk(Vector3 m_center, Vector3Int m_chunkSize, Vector3 m_cellSize, Material m_chunkMaterial = null)
     {
-        PrepareChunkMesh(m_center, m_chunkSize, m_cellSize, m_isoSurface, m_lerpParam);
-        StartCoroutine(DispatchMeshGenerationJobCoroutine());
+        PrepareChunkMesh(m_center,m_chunkSize,m_cellSize,isoSurface,lerpParam);
+        chunkMaterial = m_chunkMaterial!=null ? m_chunkMaterial : new Material(Shader.Find("Universal Render Pipeline/Lit"));
+        Chunk chunk = CreateChunkObject();
+        StartCoroutine(DispatchMeshGenerationJobCoroutine(chunk));
+        return chunk;
+    }
+
+    public override void SetChunk(Chunk chunk)
+    {
+        PrepareChunkMesh(chunk.origin,IChunkFactory.universalChunkSize,IChunkFactory.universalCellSize,isoSurface,lerpParam);
+        StartCoroutine(DispatchMeshGenerationJobCoroutine(chunk));
         chunk.SetVolume(origin,chunkSize,cellSize);
     }
 }

@@ -8,14 +8,17 @@ public sealed class PerlinNoiseScalerFieldGenerator_2D : CPUNoiseScalerFieldGene
     private float scale,persistance, lacunarity;
     private int seed;
     private Vector2 offset;
+    private float maxHeight;
+    private AnimationCurve heightMapping;
     
     public PerlinNoiseScalerFieldGenerator_2D(int m_octaves,float m_scale,float m_persistance,
-        float m_lacunarity,int m_seed,Vector2 m_offset,params object[] parameters): base(parameters)
+        float m_lacunarity,int m_seed,float maxHeight,AnimationCurve heightMapping,params object[] parameters): base(parameters)
     {
-        SetParameters(m_octaves,m_scale,m_persistance,m_lacunarity,m_seed,m_offset);
+        SetParameters(m_octaves,m_scale,m_persistance,m_lacunarity,m_seed,offset, maxHeight, heightMapping);
     }
 
-    public void SetParameters(int m_octaves, float m_scale,float m_persistance, float m_lacunarity,int m_seed,Vector2 m_offset)
+    public void SetParameters(int m_octaves, float m_scale,float m_persistance, float m_lacunarity,int m_seed,
+        Vector2 m_offset,float m_maxHeight,AnimationCurve m_heightMapping)
     {
         octaves = m_octaves;
         scale = m_scale;
@@ -23,8 +26,14 @@ public sealed class PerlinNoiseScalerFieldGenerator_2D : CPUNoiseScalerFieldGene
         lacunarity = m_lacunarity;
         seed = m_seed;
         offset = m_offset;
+        maxHeight = m_maxHeight;
+        heightMapping = m_heightMapping;
     }
     
+    /// <summary>
+    /// Generate a 2D noise map based on offset corresponding to world position
+    /// </summary>
+    /// <returns></returns>
     float[,] GenerateNoiseMap()
     {
         float[,] noiseMap = new float[size.x,size.z];
@@ -69,6 +78,7 @@ public sealed class PerlinNoiseScalerFieldGenerator_2D : CPUNoiseScalerFieldGene
 
     public override Vector4[] GenerateDotField(Vector3 origin, Vector3Int m_size, Vector3 cellsize)
     {
+        origin = offset;
         size = m_size;
         float[,] noiseMap = GenerateNoiseMap();
         dotField = new Vector4[size.x* size.y*size.z];
@@ -78,12 +88,9 @@ public sealed class PerlinNoiseScalerFieldGenerator_2D : CPUNoiseScalerFieldGene
             {
                 for (int y = 0; y < size.y; y++)
                 {
-                    dotField[Utility.GetBufferIndex(x,y,z,size)] = 
-                        new Vector4(origin.x+x*cellsize.x,origin.y+y*cellsize.y,origin.z+z*cellsize.z,0);   
-                    if(y/(float)(size.y-1)>noiseMap[x,z]||y/(float)(size.y-1)>0.99f)
-                        dotField[Utility.GetBufferIndex(x,y,z,size)].w = 1;
-                    else
-                        dotField[Utility.GetBufferIndex(x,y,z,size)].w = 0;
+                    Vector3 pos = new Vector3(origin.x+x*cellsize.x,origin.y+y*cellsize.y,origin.z+z*cellsize.z);
+                    dotField[ProcedualGeneratorUtility.GetBufferIndex(x, y, z, size)] = pos;
+                    dotField[ProcedualGeneratorUtility.GetBufferIndex(x,y,z,size)].w = pos.y>maxHeight*heightMapping.Evaluate(noiseMap[x,z])  ? 1 : 0;
                 }
             }
         }

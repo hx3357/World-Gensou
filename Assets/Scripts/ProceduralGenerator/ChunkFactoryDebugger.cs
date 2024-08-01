@@ -13,6 +13,7 @@ public class ChunkFactoryDebugger : MonoBehaviour
     public ComputeShader downSampleCS;
     public Material chunkMaterial;
     [Range(0,1)]
+    [Header("Marching Cube")]
     public float isoSurface = 0.5f;
     public float lerpParam = 0;
     public Vector3Int chunkSize;
@@ -24,14 +25,17 @@ public class ChunkFactoryDebugger : MonoBehaviour
     public float persistance = 0.5f;
     public float lacunarity = 2;
     public int seed;
+    public int maxHeight = 20;
+    public AnimationCurve heightMapping;
     [Range(1,8)]
+    [Header("Down Sample")]
     public float downSampleRate = 2;
+    public bool isDownSample = false;
+    public bool isGPU = true;
     [Header("Debug")]
     public bool isRealtimeUpdate = false;
     public bool isUpdateInTestCoroutine = false;
     public bool isShowDotFieldGizmos = false;
-    public bool isDownSample = false;
-    public bool isGPU = true;
     public bool isUseV2Generator = true;
     
     private Chunk chunk;
@@ -44,17 +48,24 @@ public class ChunkFactoryDebugger : MonoBehaviour
     private void Awake()
     {
         instance = this;
+        
+        Chunk.SetUniversalChunkSize(chunkSize,cellSize*Vector3.one);
         downSampler = isGPU? new GPUTrilinearScalerFieldDownSampler(downSampleCS):new CPUTrilinearScalerFieldDownSampler();
         scalerFieldGenerator = new PerlinNoiseScalerFieldGenerator_2D
-            (ocatves, scale, persistance, lacunarity, seed,Vector2.zero);
+            (ocatves, scale, persistance, lacunarity, seed,maxHeight,heightMapping);
         mcChunkFactory = isUseV2Generator? gameObject.AddComponent<McChunkFactoryV2>() :gameObject.AddComponent<McChunkFactory>();
-        mcChunkFactory.SetParameters(marchingCubeCS,scalerFieldGenerator,downSampleRate,downSampler);
+        mcChunkFactory.SetParameters(scalerFieldGenerator,downSampleRate,downSampler);
+        if(mcChunkFactory is McChunkFactory value)
+            value.SetExclusiveParameters(marchingCubeCS,isoSurface,lerpParam);
     }
 
     // Start is called before the first frame update
     void Start()
     {
-        chunk = mcChunkFactory.ProduceChunk(Vector3.zero, chunkSize,  cellSize*Vector3.one, isoSurface, lerpParam);
+        chunk = mcChunkFactory.ProduceChunk(new Vector3Int(0,0,0));
+        chunk.status = Chunk.ChunkStatus.Visible;
+        Chunk chunk1 = mcChunkFactory.ProduceChunk(new Vector3Int(1,0,0));
+        chunk1.status = Chunk.ChunkStatus.Visible;
         if(isUpdateInTestCoroutine)
           testCoroutine =  StartCoroutine(TestCoroutine());
     }
@@ -82,10 +93,13 @@ public class ChunkFactoryDebugger : MonoBehaviour
 
      void GenerateChunk()
      {
+         Chunk.SetUniversalChunkSize(chunkSize,cellSize*Vector3.one);
          scalerFieldGenerator = new PerlinNoiseScalerFieldGenerator_2D
-             (ocatves, scale, persistance, lacunarity, seed,Vector2.zero);
-         mcChunkFactory.SetParameters(marchingCubeCS,scalerFieldGenerator,downSampleRate,downSampler);
-         mcChunkFactory.SetChunkMesh(chunk, new Vector3(0, 0, 0), chunkSize, cellSize*Vector3.one, isoSurface, lerpParam);
+             (ocatves, scale, persistance, lacunarity, seed,maxHeight,heightMapping);
+         mcChunkFactory.SetParameters(scalerFieldGenerator,downSampleRate,downSampler);
+         if(mcChunkFactory is McChunkFactory value)
+             value.SetExclusiveParameters(marchingCubeCS,isoSurface,lerpParam);
+         mcChunkFactory.SetChunk(chunk);
      }
      
 #if UNITY_EDITOR

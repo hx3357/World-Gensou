@@ -16,7 +16,12 @@ public class GPUTrilinearScalerFieldDownSampler : IScalerFieldDownSampler
     
     private Vector3Int oldDotFieldCount;
     private Vector3Int newDotFieldCount;
-    
+    private static readonly int OldDotFieldCount = Shader.PropertyToID("oldDotFieldCount");
+    private static readonly int NewDotFieldCount = Shader.PropertyToID("newDotFieldCount");
+    private static readonly int NewCellSize = Shader.PropertyToID("newCellSize");
+    private static readonly int OldDotField = Shader.PropertyToID("oldDotField");
+    private static readonly int NewDotField = Shader.PropertyToID("newDotField");
+
     public GPUTrilinearScalerFieldDownSampler(ComputeShader downSamplerShader)
     {
         this.downSamplerShader = downSamplerShader;
@@ -40,12 +45,12 @@ public class GPUTrilinearScalerFieldDownSampler : IScalerFieldDownSampler
     
     void RunDownSampleComputeShader()
     {
-        int kernel = downSamplerShader.FindKernel("CSMain");
-        downSamplerShader.SetInts("oldDotFieldCount", oldDotFieldCount.x, oldDotFieldCount.y, oldDotFieldCount.z);
-        downSamplerShader.SetInts("newDotFieldCount", newDotFieldCount.x, newDotFieldCount.y, newDotFieldCount.z);
-        downSamplerShader.SetFloats("newCellSize",newCellSize.x, newCellSize.y, newCellSize.z);
-        downSamplerShader.SetBuffer(kernel, "oldDotField", oldDotFieldBuffer);
-        downSamplerShader.SetBuffer(kernel, "newDotField", newDotFieldBuffer);
+        int kernel = 0;
+        downSamplerShader.SetInts(OldDotFieldCount, oldDotFieldCount.x, oldDotFieldCount.y, oldDotFieldCount.z);
+        downSamplerShader.SetInts(NewDotFieldCount, newDotFieldCount.x, newDotFieldCount.y, newDotFieldCount.z);
+        downSamplerShader.SetFloats(NewCellSize,newCellSize.x, newCellSize.y, newCellSize.z);
+        downSamplerShader.SetBuffer(kernel, OldDotField, oldDotFieldBuffer);
+        downSamplerShader.SetBuffer(kernel, NewDotField, newDotFieldBuffer);
         downSamplerShader.Dispatch(kernel, Mathf.CeilToInt(newDotFieldCount.x / 8.0f), 
             Mathf.CeilToInt(newDotFieldCount.y / 8.0f), 
             Mathf.CeilToInt(newDotFieldCount.z / 8.0f));

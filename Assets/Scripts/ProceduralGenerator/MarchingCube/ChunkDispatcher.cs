@@ -12,5 +12,7 @@ public class ChunkDispatcher : MonoBehaviour
    private Vector3Int chunkSize;
    
    private Dictionary<Vector3Int,Chunk> visibleChunkDict = new Dictionary<Vector3Int, Chunk>();
+   private Dictionary<Vector3Int,Chunk> hiddenChunkDict = new Dictionary<Vector3Int, Chunk>();
+   private Dictionary<Vector3Int,Chunk> emptyChunkDict = new Dictionary<Vector3Int, Chunk>();
    
 }

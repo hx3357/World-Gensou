@@ -24,7 +24,7 @@ public class CPUTrilinearScalerFieldDownSampler : IScalerFieldDownSampler
             {
                 for(int z = 0; z < m_newDotFieldSize.z; z++)
                 {
-                    int index = Utility.GetBufferIndex(x, y, z, m_newDotFieldSize);
+                    int index = ProcedualGeneratorUtility.GetBufferIndex(x, y, z, m_newDotFieldSize);
                     Vector3 newDotFieldPosition = new Vector3(x*m_newCellSize.x, y*m_newCellSize.y, z*m_newCellSize.z);
                     Vector3Int surroundingCubePosition = new Vector3Int((int)newDotFieldPosition.x, 
                         (int)newDotFieldPosition.y, (int)newDotFieldPosition.z);
@@ -37,7 +37,7 @@ public class CPUTrilinearScalerFieldDownSampler : IScalerFieldDownSampler
                         yIndex = yIndex >= m_dotFieldCount.y ? m_dotFieldCount.y - 1 : yIndex;
                         int zIndex = surroundingCubePosition.z + ((i & 4) >> 2);
                         zIndex = zIndex >= m_dotFieldCount.z ? m_dotFieldCount.z - 1 : zIndex;
-                        surroundingCube[i] = dotField[Utility.GetBufferIndex(xIndex, yIndex, zIndex, m_dotFieldCount)];
+                        surroundingCube[i] = dotField[ProcedualGeneratorUtility.GetBufferIndex(xIndex, yIndex, zIndex, m_dotFieldCount)];
                     }
                     Vector3 lerpParams =new Vector3 ((newDotFieldPosition.x - surroundingCubePosition.x) / m_newCellSize.x,
                         (newDotFieldPosition.y - surroundingCubePosition.y) / m_newCellSize.y,

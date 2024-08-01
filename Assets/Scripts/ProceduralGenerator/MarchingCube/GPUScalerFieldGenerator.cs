@@ -12,7 +12,11 @@ public class GPUScalerFieldGenerator : IScalerFieldGenerator
     private ComputeShader cs;
     
     private ComputeBuffer outputPointBuffer;
-    
+    private static readonly int DotFieldCount = Shader.PropertyToID("dotFieldCount");
+    private static readonly int Origin = Shader.PropertyToID("origin");
+    private static readonly int CellSize = Shader.PropertyToID("cellSize");
+    private static readonly int OutputPoints = Shader.PropertyToID("outputPoints");
+
     protected GPUScalerFieldGenerator(ComputeShader m_cs,params object[] m_parameters)
     {
         cs = m_cs;
@@ -31,11 +35,11 @@ public class GPUScalerFieldGenerator : IScalerFieldGenerator
     
     void RunNoiseComputeShader()
     {
-        int kernel = cs.FindKernel("CSMain");
-        cs.SetInts("dotFieldCount", dotFieldCount.x, dotFieldCount.y, dotFieldCount.z);
-        cs.SetVector("origin",  origin);
-        cs.SetVector("cellSize", cellsize);
-        cs.SetBuffer(kernel, "outputPoints", outputPointBuffer);
+        int kernel = 0;
+        cs.SetInts(DotFieldCount, dotFieldCount.x, dotFieldCount.y, dotFieldCount.z);
+        cs.SetVector(Origin,  origin);
+        cs.SetVector(CellSize, cellsize);
+        cs.SetBuffer(kernel, OutputPoints, outputPointBuffer);
         cs.Dispatch(kernel, dotFieldCount.x/8, dotFieldCount.y/8, dotFieldCount.z/8);
     }
 
