@@ -718,18 +718,20 @@ MonoBehaviour:
   chunkMaterial: {fileID: 2100000, guid: 8908da3cb4f92e448a332896de150c86, type: 2}
   isoSurface: 0.5
   lerpParam: 0
-  chunkSize: {x: 64, y: 64, z: 64}
+  chunkSize: {x: 48, y: 48, z: 48}
   cellSize: 1
   ocatves: 3
   scale: 13.66
   persistance: 0.5
   lacunarity: 2
   seed: 1234
-  downSampleRate: 2
+  downSampleRate: 1
   isRealtimeUpdate: 0
-  isShowDotFieldGizmos: 1
+  isUpdateInTestCoroutine: 1
+  isShowDotFieldGizmos: 0
   isDownSample: 1
   isGPU: 1
+  isUseV2Generator: 1
 --- !u!1 &1448474070
 GameObject:
   m_ObjectHideFlags: 0

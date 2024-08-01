@@ -28,14 +28,18 @@ public class ChunkFactoryDebugger : MonoBehaviour
     public float downSampleRate = 2;
     [Header("Debug")]
     public bool isRealtimeUpdate = false;
+    public bool isUpdateInTestCoroutine = false;
     public bool isShowDotFieldGizmos = false;
     public bool isDownSample = false;
     public bool isGPU = true;
+    public bool isUseV2Generator = true;
     
     private Chunk chunk;
-    private ChunkFactory mcChunkFactory;
+    private IChunkFactory mcChunkFactory;
     private IScalerFieldGenerator scalerFieldGenerator;
     private IScalerFieldDownSampler downSampler;
+    
+    private Coroutine testCoroutine;
 
     private void Awake()
     {
@@ -43,25 +47,28 @@ public class ChunkFactoryDebugger : MonoBehaviour
         downSampler = isGPU? new GPUTrilinearScalerFieldDownSampler(downSampleCS):new CPUTrilinearScalerFieldDownSampler();
         scalerFieldGenerator = new PerlinNoiseScalerFieldGenerator_2D
             (ocatves, scale, persistance, lacunarity, seed,Vector2.zero);
-        mcChunkFactory = new McChunkFactory(marchingCubeCS,scalerFieldGenerator,downSampleRate,isDownSample? downSampler:null);
+        mcChunkFactory = isUseV2Generator? gameObject.AddComponent<McChunkFactoryV2>() :gameObject.AddComponent<McChunkFactory>();
+        mcChunkFactory.SetParameters(marchingCubeCS,scalerFieldGenerator,downSampleRate,downSampler);
     }
 
     // Start is called before the first frame update
     void Start()
     {
-        // Vector4[] testDotField = new Vector4[3*3*3];
-        // for(int x=0;x<3;x++)
-        // for(int y=0;y<3;y++)
-        // for(int z=0;z<3;z++)
-        // {
-        //     testDotField[Utility.GetBufferIndex(x,y,z,new Vector3Int(3,3,3))] = new Vector4(x,y,z,1);
-        // }
-        //
-        // Vector4 [] downSampledDotField = downSampler.DownSample(testDotField,new Vector3Int(3,3,3),3/2.0f,out Vector3Int newSize,out Vector3 newCellSize);
-        //
         chunk = mcChunkFactory.ProduceChunk(Vector3.zero, chunkSize,  cellSize*Vector3.one, isoSurface, lerpParam);
+        if(isUpdateInTestCoroutine)
+          testCoroutine =  StartCoroutine(TestCoroutine());
     }
-    
+
+    IEnumerator TestCoroutine()
+    {
+        while (true)
+        {
+            GenerateChunk();
+            yield return new WaitForSeconds(1);
+        }
+    }
+
+  
     public void OnRegenerateMeshButtonClicked()
     {
        GenerateChunk();
@@ -77,7 +84,7 @@ public class ChunkFactoryDebugger : MonoBehaviour
      {
          scalerFieldGenerator = new PerlinNoiseScalerFieldGenerator_2D
              (ocatves, scale, persistance, lacunarity, seed,Vector2.zero);
-         mcChunkFactory = new McChunkFactory(marchingCubeCS,scalerFieldGenerator,downSampleRate,isDownSample? downSampler:null);
+         mcChunkFactory.SetParameters(marchingCubeCS,scalerFieldGenerator,downSampleRate,downSampler);
          mcChunkFactory.SetChunkMesh(chunk, new Vector3(0, 0, 0), chunkSize, cellSize*Vector3.one, isoSurface, lerpParam);
      }
      
@@ -91,6 +98,8 @@ public class ChunkFactoryDebugger : MonoBehaviour
         if (!Application.isPlaying||!isRealtimeUpdate)
             return;
         GenerateChunk();
+        if(!isUpdateInTestCoroutine&&testCoroutine!=null)
+            StopCoroutine(testCoroutine);
     }
     
 #endif
