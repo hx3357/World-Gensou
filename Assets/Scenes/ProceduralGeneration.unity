@@ -720,12 +720,13 @@ MonoBehaviour:
   lerpParam: 0
   chunkSize: {x: 48, y: 48, z: 48}
   cellSize: 1
-  ocatves: 3
-  scale: 13.66
+  ocatves: 4
+  scale: 40
+  offset: {x: 0, y: 0, z: 0}
   persistance: 0.5
   lacunarity: 2
   seed: 1234
-  maxHeight: 20
+  maxHeight: 80
   heightMapping:
     serializedVersion: 2
     m_Curve:
@@ -741,20 +742,22 @@ MonoBehaviour:
     - serializedVersion: 3
       time: 1
       value: 1
-      inSlope: 2
-      outSlope: 2
+      inSlope: 1.6049745
+      outSlope: 1.6049745
       tangentMode: 0
       weightedMode: 0
-      inWeight: 0
+      inWeight: 0.053881228
       outWeight: 0
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
-  downSampleRate: 1
+  heightOffset: 0.446
+  heightScale: 0.261
+  downSampleRate: 2
   isDownSample: 1
   isGPU: 1
   isRealtimeUpdate: 0
-  isUpdateInTestCoroutine: 1
+  isUpdateInTestCoroutine: 0
   isShowDotFieldGizmos: 0
   isUseV2Generator: 1
 --- !u!1 &1448474070

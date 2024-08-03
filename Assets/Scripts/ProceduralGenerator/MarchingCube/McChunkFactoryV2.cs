@@ -134,4 +134,20 @@ public class McChunkFactoryV2 : McChunkFactory
         StartCoroutine(DispatchMeshGenerationJobCoroutine(chunk));
         chunk.SetVolume(origin,chunkSize,cellSize);
     }
+
+    /// <summary>
+    /// Change LOD level based on existing dot field data
+    /// </summary>
+    /// <param name="chunk"></param>
+    /// <param name="lodLevel"></param>
+    public override void SetChunk(Chunk chunk, Chunk.LODLevel lodLevel)
+    {
+        if(lodLevel == chunk.lodLevel)
+            return;
+        SetDownSampler(downSampler,(float)lodLevel);
+        PrepareChunkMesh(chunk.origin,IChunkFactory.universalChunkSize,IChunkFactory.universalCellSize,isoSurface,lerpParam,chunk);
+        StartCoroutine(DispatchMeshGenerationJobCoroutine(chunk));
+        chunk.SetVolume(origin,chunkSize,cellSize);
+        chunk.SetMesh(chunkMesh);
+    }
 }

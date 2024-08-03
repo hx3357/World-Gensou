@@ -9,14 +9,14 @@ public static class ProcedualGeneratorUtility
         return x + y * size.x + z * size.x * size.y;
     }
     
-    public static void ShowDotFieldGizmos(Vector3Int size, Vector4[] dotField)
+    public static void ShowDotFieldGizmo(Vector3 origin ,Vector3Int size, Vector4[] dotField)
     {
         for(int x=0;x<size.x;x++)
         for(int y=0;y<size.y;y++)
         for(int z=0;z<size.z;z++)
         {
             Gizmos.color = Color.Lerp(Color.black, Color.white, dotField[ProcedualGeneratorUtility.GetBufferIndex(x, y, z, size)].w);
-            Gizmos.DrawCube(dotField[ProcedualGeneratorUtility.GetBufferIndex(x, y, z, size)], Vector3.one * 0.1f);
+            Gizmos.DrawCube((Vector3)dotField[ProcedualGeneratorUtility.GetBufferIndex(x, y, z, size)] + origin, Vector3.one * 0.1f);
         }
     }
     

@@ -132,6 +132,7 @@ public class McChunkFactory: MonoBehaviour, IChunkFactory
             }
         };
         Chunk chunk = chunkObject.AddComponent<Chunk>();
+        chunk.dotField = dotField;
         chunk.SetVolume(origin,chunkSize,cellSize);
         chunk.SetMesh(chunkMesh);
         chunk.SetMaterial(chunkMaterial);
@@ -151,6 +152,44 @@ public class McChunkFactory: MonoBehaviour, IChunkFactory
         cellSize = m_cellSize;
 
         dotField = scalerFieldGenerator.GenerateDotField(origin, dotFieldSize, cellSize);
+        dotField = downSampler?.DownSample(dotField,dotFieldSize,cellSize,downSampleRate, out dotFieldSize,out chunkSize,out cellSize);
+        InitBuffer();
+        pointBuffer.SetData(dotField);
+        RunMarchingCubeComputeShader();
+        triangleCount = triangleBuffer.count;
+        triangles = new Triangle[triangleCount];
+        triangleBuffer.GetData(triangles,0,0,triangleCount);
+        ReleaseBuffer();
+    }
+    
+    /// <summary>
+    /// Prepare mesh data for chunk
+    /// </summary>
+    /// <param name="m_origin"></param>
+    /// <param name="m_chunkSize"></param>
+    /// <param name="m_cellSize"></param>
+    /// <param name="m_isoSurface"></param>
+    /// <param name="m_lerpParam"></param>
+    /// <param name="chunk">Use the existing chunk dot field data</param>
+    protected void PrepareChunkMesh(Vector3 m_origin, Vector3Int m_chunkSize, Vector3 m_cellSize,
+        float m_isoSurface, float m_lerpParam,Chunk chunk)
+    {
+        origin = m_origin;
+        dotFieldSize = new Vector3Int(m_chunkSize.x+1,m_chunkSize.y+1,m_chunkSize.z+1);
+        chunkSize =m_chunkSize;
+        cellSize = m_cellSize;
+        isoSurface = m_isoSurface;
+        lerpParam = m_lerpParam;
+        cellSize = m_cellSize;
+        if(chunk!=null && chunk.dotField!=null)
+        {
+            dotField = chunk.dotField;
+            dotFieldSize = new Vector3Int(chunk.chunkSize.x+1,chunk.chunkSize.y+1,chunk.chunkSize.z+1);
+        }
+        else
+        {
+            dotField = scalerFieldGenerator.GenerateDotField(origin, dotFieldSize, cellSize);
+        }
         dotField = downSampler?.DownSample(dotField,dotFieldSize,cellSize,downSampleRate, out dotFieldSize,out chunkSize,out cellSize);
         InitBuffer();
         pointBuffer.SetData(dotField);
@@ -204,10 +243,17 @@ public class McChunkFactory: MonoBehaviour, IChunkFactory
         chunk.SetMesh(chunkMesh);
     }
     
+    /// <summary>
+    /// Change LOD level based on existing dot field data
+    /// </summary>
+    /// <param name="chunk"></param>
+    /// <param name="lodLevel"></param>
     public virtual void SetChunk(Chunk chunk,Chunk.LODLevel lodLevel)
     {
+        if(lodLevel == chunk.lodLevel)
+            return;
         SetDownSampler(downSampler,(float)lodLevel);
-        PrepareChunkMesh(chunk.origin,IChunkFactory.universalChunkSize,IChunkFactory.universalCellSize,isoSurface,lerpParam);
+        PrepareChunkMesh(chunk.origin,IChunkFactory.universalChunkSize,IChunkFactory.universalCellSize,isoSurface,lerpParam,chunk);
         GenerateLitMesh();
         chunk.SetVolume(origin,chunkSize,cellSize);
         chunk.SetMesh(chunkMesh);
@@ -245,11 +291,6 @@ public class McChunkFactory: MonoBehaviour, IChunkFactory
     {
         downSampler = m_downSampler;
         downSampleRate = m_downSampleRate;
-    }
-    
-    public void DrawDotFieldGizmos()
-    {
-        ProcedualGeneratorUtility.ShowDotFieldGizmos(dotFieldSize,dotField);
     }
 
     #endregion

@@ -11,6 +11,7 @@ public class Chunk : MonoBehaviour
     public Vector3Int chunkSize;
     public Vector3 cellSize;
     public Vector3Int chunkCoord;
+    public Vector4[] dotField;
     
     /// <summary>
     /// Empty: Chunk mesh is created, but no chunk exclusive computation
@@ -98,6 +99,12 @@ public class Chunk : MonoBehaviour
         chunkSize = m_cellCounts;
         cellSize = m_cellSize;
         volumeSize = new Vector3((chunkSize.x) * cellSize.x, (chunkSize.y) * cellSize.y, (chunkSize.z) * cellSize.z);
+    }
+
+    public void ShowDotFieldGizmo()
+    {
+        ProcedualGeneratorUtility.ShowDotFieldGizmo(transform.position,
+            new Vector3Int(chunkSize.x+1,chunkSize.y+1,chunkSize.z+1), dotField);
     }
 
     void ShowMeshNormal()

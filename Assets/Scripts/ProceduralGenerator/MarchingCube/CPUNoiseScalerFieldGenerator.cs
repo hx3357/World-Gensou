@@ -15,7 +15,7 @@ public class CPUNoiseScalerFieldGenerator : IScalerFieldGenerator
     }
 
 
-    public virtual Vector4[] GenerateDotField( Vector3 m_origin, Vector3Int m_size,
+    public virtual Vector4[] GenerateDotField( Vector3 m_origin, Vector3Int dotfieldSize,
         Vector3 m_cellsize)
     {
         return null;
