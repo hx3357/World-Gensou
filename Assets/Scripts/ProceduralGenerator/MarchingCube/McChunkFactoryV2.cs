@@ -58,10 +58,6 @@ public class McChunkFactoryV2 : McChunkFactory
             int currentVertexIndex = 0;
             foreach (var triangle in triangles)
             {
-                if(triangle.p1.Equals(float3.zero) && 
-                   triangle.p2.Equals(float3.zero) && 
-                   triangle.p3.Equals(float3.zero))
-                    break;
                 if (!vertexIndexMap.ContainsKey(triangle.p1))
                 {
                     vertexIndexMap.Add(triangle.p1, currentVertexIndex);
@@ -124,7 +120,15 @@ public class McChunkFactoryV2 : McChunkFactory
         PrepareChunkMesh(m_center,m_chunkSize,m_cellSize,isoSurface,lerpParam);
         chunkMaterial = m_chunkMaterial!=null ? m_chunkMaterial : new Material(Shader.Find("Universal Render Pipeline/Lit"));
         Chunk chunk = CreateChunkObject();
-        StartCoroutine(DispatchMeshGenerationJobCoroutine(chunk));
+        if (isCulling)
+        {
+            chunk.HideMesh();
+        }
+        else
+        {
+            chunk.ShowMesh();
+            StartCoroutine(DispatchMeshGenerationJobCoroutine(chunk));
+        }
         return chunk;
     }
 
@@ -144,10 +148,19 @@ public class McChunkFactoryV2 : McChunkFactory
     {
         if(lodLevel == chunk.lodLevel)
             return;
-        SetDownSampler(downSampler,(float)lodLevel);
-        PrepareChunkMesh(chunk.origin,IChunkFactory.universalChunkSize,IChunkFactory.universalCellSize,isoSurface,lerpParam,chunk);
-        StartCoroutine(DispatchMeshGenerationJobCoroutine(chunk));
-        chunk.SetVolume(origin,chunkSize,cellSize);
+        isCulling = lodLevel == Chunk.LODLevel.Culling;
+        if (lodLevel != Chunk.LODLevel.Culling)
+        {
+            chunk.ShowMesh();
+            SetDownSampler(downSampler,Chunk.lodDownSampleRateTable[lodLevel]);
+            PrepareChunkMesh(chunk.origin,IChunkFactory.universalChunkSize,IChunkFactory.universalCellSize,isoSurface,lerpParam,chunk);
+            StartCoroutine(DispatchMeshGenerationJobCoroutine(chunk));
+        }
+        else
+        {
+            chunk.HideMesh();
+        }
+        chunk.SetLODLevel(lodLevel);
         chunk.SetMesh(chunkMesh);
     }
 }

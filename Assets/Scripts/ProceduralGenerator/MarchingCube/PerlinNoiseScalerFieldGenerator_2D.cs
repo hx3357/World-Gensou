@@ -94,7 +94,7 @@ public sealed class PerlinNoiseScalerFieldGenerator_2D : CPUNoiseScalerFieldGene
                     Vector3 pos = new Vector3(x*cellsize.x,y*cellsize.y,z*cellsize.z);
                     dotField[ProcedualGeneratorUtility.GetBufferIndex(x, y, z, size)] = pos;
                     dotField[ProcedualGeneratorUtility.GetBufferIndex(x,y,z,size)].w = 
-                        pos.y>maxHeight*heightMapping.Evaluate(heightScale* noiseMap[x,z]+heightOffset)  ? 1 : 0;
+                        pos.y+origin.y>maxHeight*heightMapping.Evaluate(heightScale* noiseMap[x,z]+heightOffset)  ? 1 : 0;
                 }
             }
         }

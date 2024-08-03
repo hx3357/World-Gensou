@@ -34,7 +34,6 @@ public class GPUTrilinearScalerFieldDownSampler : IScalerFieldDownSampler
         
         newDotField = new Vector4[newDotFieldCount.x*newDotFieldCount.y*newDotFieldCount.z];
         newDotFieldBuffer = new ComputeBuffer(newDotFieldCount.x*newDotFieldCount.y*newDotFieldCount.z, sizeof(float)*4);
-        newDotFieldBuffer.SetData(newDotField);
     }
     
     void ReleaseBuffer()

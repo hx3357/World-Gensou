@@ -21,7 +21,7 @@ struct Triangle
 
 // Create a RenderTexture with enableRandomWrite flag and set it
 // with cs.SetTexture
-RWStructuredBuffer<float4> inputPoints;
+StructuredBuffer<float4> inputPoints;
 AppendStructuredBuffer<Triangle> outputTriangles;
 
 

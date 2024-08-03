@@ -14,33 +14,6 @@ public class Chunk : MonoBehaviour
     public Vector4[] dotField;
     
     /// <summary>
-    /// Empty: Chunk mesh is created, but no chunk exclusive computation
-    /// Hidden: Chunk itself is invisible
-    /// Visible: Chunk is visible
-    /// </summary>
-    public enum ChunkStatus
-    {
-        Empty,Hidden,Visible
-    }
-
-    public ChunkStatus status
-    {
-        get => _status;
-        set
-        {
-            statusChangeAction?.Invoke(_status, value);
-            _status = value;
-        }
-    }
-
-    private ChunkStatus _status = ChunkStatus.Visible;
-    
-    /// <summary>
-    /// Source status -> Target status
-    /// </summary>
-    Action<ChunkStatus,ChunkStatus> statusChangeAction;
-    
-    /// <summary>
     /// If a chunk is static, chunk exclusive computation will be executed constantly
     /// </summary>
     public bool isStatic = false;
@@ -50,12 +23,21 @@ public class Chunk : MonoBehaviour
     /// </summary>
     public enum LODLevel
     {
-        Ultra = 1,High = 2,Medium=3,Low=4,Potato=8
+        High,Low,Potato,Culling
     }
     
-    public LODLevel lodLevel = LODLevel.Ultra;
+    public static readonly Dictionary<LODLevel,float> lodDownSampleRateTable = new Dictionary<LODLevel, float>()
+    {
+        {LODLevel.High,2},
+        {LODLevel.Low,3},
+        {LODLevel.Potato,4},
+        {LODLevel.Culling,0}
+    };
     
-    public bool isShowVolumeGizmo = true;
+    public LODLevel lodLevel = LODLevel.High;
+    
+    public bool isShowVolumeGizmo ;
+    public bool isShowDotFieldGizmo = false;
     
     [Header("Debug")]
     public bool showMeshNormal = false;
@@ -78,6 +60,20 @@ public class Chunk : MonoBehaviour
         return new Vector3(coord.x*IChunkFactory.universalChunkSize.x*IChunkFactory.universalCellSize.x,
             coord.y*IChunkFactory.universalChunkSize.y*IChunkFactory.universalCellSize.y,
             coord.z*IChunkFactory.universalChunkSize.z*IChunkFactory.universalCellSize.z);
+    }
+    
+    public static Vector3 GetChunkCenterByCoord(Vector3Int coord)
+    {
+        return GetChunkOriginByCoord(coord) + new Vector3((IChunkFactory.universalChunkSize.x-1)*IChunkFactory.universalCellSize.x/2,
+            (IChunkFactory.universalChunkSize.y-1)*IChunkFactory.universalCellSize.y/2,
+            (IChunkFactory.universalChunkSize.z-1)*IChunkFactory.universalCellSize.z/2);
+    }
+    
+    public static Vector3Int GetChunkCoordByPosition(Vector3 position)
+    {
+        return new Vector3Int(Mathf.FloorToInt(position.x/IChunkFactory.universalChunkSize.x),
+            Mathf.FloorToInt(position.y/IChunkFactory.universalChunkSize.y),
+            Mathf.FloorToInt(position.z/IChunkFactory.universalChunkSize.z));
     }
     #endregion
     
@@ -106,6 +102,26 @@ public class Chunk : MonoBehaviour
         ProcedualGeneratorUtility.ShowDotFieldGizmo(transform.position,
             new Vector3Int(chunkSize.x+1,chunkSize.y+1,chunkSize.z+1), dotField);
     }
+    
+    public void HideMesh()
+    {
+        meshRenderer.enabled = false;
+    }
+    
+    public void ShowMesh()
+    {
+        meshRenderer.enabled = true;
+    }
+
+    public void DestroyChunk()
+    {
+        Destroy(gameObject);
+    }
+    
+    public void SetLODLevel(LODLevel level)
+    {
+        lodLevel = level;
+    }
 
     void ShowMeshNormal()
     {
@@ -117,43 +133,6 @@ public class Chunk : MonoBehaviour
         }
     }
     
-    void DefaultStatusChangeAction(ChunkStatus sourceStat, ChunkStatus targetStat)
-    {
-        switch (sourceStat)
-        {
-            case ChunkStatus.Empty:
-                switch (targetStat)
-                {
-                    case ChunkStatus.Hidden:
-                        break;
-                    case ChunkStatus.Visible:
-                        gameObject.SetActive(true);
-                        break;
-                }
-                break;
-            case ChunkStatus.Hidden:
-                switch (targetStat)
-                {
-                    case ChunkStatus.Empty:
-                        break;
-                    case ChunkStatus.Visible:
-                        gameObject.SetActive(true);
-                        break;
-                }
-                break;
-            case ChunkStatus.Visible:
-                switch (targetStat)
-                {
-                    case ChunkStatus.Empty:
-                        gameObject.SetActive(false);
-                        break;
-                    case ChunkStatus.Hidden:
-                        gameObject.SetActive(false);
-                        break;
-                }
-                break;
-        }
-    }
     
     private void Awake()
     {
@@ -163,8 +142,6 @@ public class Chunk : MonoBehaviour
         meshRenderer = gameObject.GetComponent<MeshRenderer>();
         if (meshRenderer == null)
             meshRenderer = gameObject.AddComponent<MeshRenderer>();
-        
-        statusChangeAction += DefaultStatusChangeAction;
     }
 
     private void Update()
@@ -177,19 +154,28 @@ public class Chunk : MonoBehaviour
     {
         if(isShowVolumeGizmo)
         {
-            switch (_status)
+            switch (lodLevel)
             {
-                case ChunkStatus.Empty:
-                    Gizmos.color = Color.cyan;
-                    break;
-                case ChunkStatus.Hidden:
+                case LODLevel.High:
                     Gizmos.color = Color.blue;
                     break;
-                case ChunkStatus.Visible:
-                    Gizmos.color = Color.magenta;
+                case LODLevel.Low:
+                    Gizmos.color = Color.yellow;
                     break;
+                case LODLevel.Potato:
+                    Gizmos.color = Color.red;
+                    break;
+                case LODLevel.Culling:
+                    Gizmos.color = Color.gray;
+                    break;
+                    
             }
             Gizmos.DrawWireCube(transform.position + volumeSize/2, volumeSize);
+        }
+
+        if (isShowDotFieldGizmo)
+        {
+            ShowDotFieldGizmo();
         }
     }
     

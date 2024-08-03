@@ -12,8 +12,8 @@ public class ChunkFactoryDebugger : MonoBehaviour
     public ComputeShader marchingCubeCS;
     public ComputeShader downSampleCS;
     public Material chunkMaterial;
-    [Range(0,1)]
     [Header("Marching Cube")]
+    [Range(0,1)]
     public float isoSurface = 0.5f;
     public float lerpParam = 0;
     public Vector3Int chunkSize;
@@ -37,6 +37,7 @@ public class ChunkFactoryDebugger : MonoBehaviour
     public float downSampleRate = 2;
     public bool isDownSample = false;
     public bool isGPU = true;
+    public Chunk.LODLevel lodLevel = Chunk.LODLevel.High;
     [Header("Debug")]
     public bool isRealtimeUpdate = false;
     public bool isUpdateInTestCoroutine = false;
@@ -67,15 +68,12 @@ public class ChunkFactoryDebugger : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-         // chunk = mcChunkFactory.ProduceChunk(new Vector3Int(0,0,0));
-         // chunk1 = mcChunkFactory.ProduceChunk(new Vector3Int(0,0,1));
-        for(int i=-5;i<5;i++)
-        {
-            for (int j = -5; j < 5; j++)
-            {
-                mcChunkFactory.ProduceChunk(new Vector3Int(i,0,j));
-            }
-        }
+          chunk = mcChunkFactory.ProduceChunk(new Vector3Int(0,0,0),Chunk.LODLevel.Culling);
+         int scale = 6;
+         for(int k = 0;k<scale;k++)
+         {
+             mcChunkFactory.ProduceChunk(new Vector3Int(1,0,k),(Chunk.LODLevel)k);
+         }
         if(isUpdateInTestCoroutine)
           testCoroutine =  StartCoroutine(TestCoroutine());
     }
@@ -114,7 +112,7 @@ public class ChunkFactoryDebugger : MonoBehaviour
              value.SetExclusiveParameters(marchingCubeCS,isoSurface,lerpParam);
          if(chunk!=null)
          {
-             mcChunkFactory?.SetChunk(chunk);
+             mcChunkFactory?.SetChunk(chunk,lodLevel);
              // chunk.gameObject.SetActive(false);
              // chunk = mcChunkFactory.ProduceChunk(offset);
          }
