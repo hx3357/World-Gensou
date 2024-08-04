@@ -43,7 +43,7 @@ public class GPUScalerFieldGenerator : IScalerFieldGenerator
         cs.Dispatch(kernel, dotFieldCount.x/8, dotFieldCount.y/8, dotFieldCount.z/8);
     }
 
-    public virtual Vector4[] GenerateDotField( Vector3 m_origin,Vector3Int dotfieldSize, Vector3 m_cellsize)
+    public virtual (Vector4[],bool) GenerateDotField( Vector3 m_origin,Vector3Int dotfieldSize, Vector3 m_cellsize)
     {
         origin = m_origin;
         dotFieldCount = dotfieldSize;
@@ -53,6 +53,6 @@ public class GPUScalerFieldGenerator : IScalerFieldGenerator
         Vector4[] dotField = new Vector4[dotFieldCount.x*dotFieldCount.y*dotFieldCount.z];
         outputPointBuffer.GetData(dotField);
         ReleaseBuffer();
-        return null;
+        return (dotField,false);
     }
 }

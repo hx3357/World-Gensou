@@ -59,7 +59,7 @@ public class ChunkFactoryDebugger : MonoBehaviour
         downSampler = isGPU? new GPUTrilinearScalerFieldDownSampler(downSampleCS):new CPUTrilinearScalerFieldDownSampler();
         scalerFieldGenerator = new PerlinNoiseScalerFieldGenerator_2D
             (ocatves, scale, persistance, lacunarity, seed,maxHeight,heightMapping,heightOffset,heightScale);
-        mcChunkFactory = isUseV2Generator? gameObject.AddComponent<McChunkFactoryV2>() :gameObject.AddComponent<McChunkFactory>();
+        mcChunkFactory = gameObject.AddComponent<McChunkFactory>();
         mcChunkFactory.SetParameters(scalerFieldGenerator,downSampleRate,downSampler);
         if(mcChunkFactory is McChunkFactory value)
             value.SetExclusiveParameters(marchingCubeCS,isoSurface,lerpParam);
@@ -69,7 +69,7 @@ public class ChunkFactoryDebugger : MonoBehaviour
     void Start()
     {
           chunk = mcChunkFactory.ProduceChunk(new Vector3Int(0,0,0),Chunk.LODLevel.Culling);
-         int scale = 6;
+         int scale = 4;
          for(int k = 0;k<scale;k++)
          {
              mcChunkFactory.ProduceChunk(new Vector3Int(1,0,k),(Chunk.LODLevel)k);

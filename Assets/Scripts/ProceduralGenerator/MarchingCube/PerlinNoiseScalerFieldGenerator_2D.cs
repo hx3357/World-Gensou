@@ -2,8 +2,10 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public sealed class PerlinNoiseScalerFieldGenerator_2D : CPUNoiseScalerFieldGenerator
+public sealed class PerlinNoiseScalerFieldGenerator_2D : IScalerFieldGenerator
 {
+    private Vector4[] dotField;
+    private Vector3Int size;
     private int octaves;
     private float scale,persistance, lacunarity;
     private int seed;
@@ -16,7 +18,7 @@ public sealed class PerlinNoiseScalerFieldGenerator_2D : CPUNoiseScalerFieldGene
     private Vector3 cellsize;
     
     public PerlinNoiseScalerFieldGenerator_2D(int m_octaves,float m_scale,float m_persistance,
-        float m_lacunarity,int m_seed,float maxHeight,AnimationCurve heightMapping,float heightOffset,float heightScale,params object[] parameters): base(parameters)
+        float m_lacunarity,int m_seed,float maxHeight,AnimationCurve heightMapping,float heightOffset,float heightScale)
     {
         SetParameters(m_octaves,m_scale,m_persistance,m_lacunarity,m_seed,offset, maxHeight, heightMapping,
             heightOffset,heightScale);
@@ -78,26 +80,31 @@ public sealed class PerlinNoiseScalerFieldGenerator_2D : CPUNoiseScalerFieldGene
         return noiseMap;
     }
 
-    public override Vector4[] GenerateDotField(Vector3 origin, Vector3Int dotfieldSize, Vector3 m_cellsize)
+    public (Vector4[],bool) GenerateDotField(Vector3 origin, Vector3Int dotfieldSize, Vector3 m_cellsize)
     {
         offset = origin;
         size = dotfieldSize;
         cellsize = m_cellsize;
         float[,] noiseMap = GenerateNoiseMap();
         dotField = new Vector4[size.x* size.y*size.z];
-        for (int x = 0; x < size.x; x++)
-        {
-            for (int z = 0; z < size.z; z++)
+        bool isAirFlag = origin.y>maxHeight;
+        bool isUnderGroundFlag = origin.y<0;
+        if(!(isAirFlag || isUnderGroundFlag))
+            for (int x = 0; x < size.x; x++)
             {
-                for (int y = 0; y < size.y; y++)
+                for (int z = 0; z < size.z; z++)
                 {
-                    Vector3 pos = new Vector3(x*cellsize.x,y*cellsize.y,z*cellsize.z);
-                    dotField[ProcedualGeneratorUtility.GetBufferIndex(x, y, z, size)] = pos;
-                    dotField[ProcedualGeneratorUtility.GetBufferIndex(x,y,z,size)].w = 
-                        pos.y+origin.y>maxHeight*heightMapping.Evaluate(heightScale* noiseMap[x,z]+heightOffset)  ? 1 : 0;
+                    for (int y = 0; y < size.y; y++)
+                    {
+                        Vector3 pos = new Vector3(x*cellsize.x,y*cellsize.y,z*cellsize.z);
+                        dotField[ProcedualGeneratorUtility.GetBufferIndex(x, y, z, size)] = pos;
+                        float noiseValue = noiseMap[x, z];
+                        int dotScalar =  pos.y+origin.y>maxHeight*heightMapping.Evaluate(heightScale* noiseValue+heightOffset)  ? 1 : 0;
+                        dotField[ProcedualGeneratorUtility.GetBufferIndex(x, y, z, size)].w = dotScalar;
+                        
+                    }
                 }
             }
-        }
-        return dotField;
+        return (dotField, isAirFlag || isUnderGroundFlag);
     }
 }

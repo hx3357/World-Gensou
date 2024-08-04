@@ -12,6 +12,7 @@ public class Chunk : MonoBehaviour
     public Vector3 cellSize;
     public Vector3Int chunkCoord;
     public Vector4[] dotField;
+    public Vector3Int dotFieldSize;
     
     /// <summary>
     /// If a chunk is static, chunk exclusive computation will be executed constantly
@@ -31,7 +32,7 @@ public class Chunk : MonoBehaviour
         {LODLevel.High,2},
         {LODLevel.Low,3},
         {LODLevel.Potato,4},
-        {LODLevel.Culling,0}
+        {LODLevel.Culling,8}
     };
     
     /// <summary>
@@ -79,9 +80,9 @@ public class Chunk : MonoBehaviour
     
     public static Vector3Int GetChunkCoordByPosition(Vector3 position)
     {
-        return new Vector3Int(Mathf.FloorToInt(position.x/IChunkFactory.universalChunkSize.x),
-            Mathf.FloorToInt(position.y/IChunkFactory.universalChunkSize.y),
-            Mathf.FloorToInt(position.z/IChunkFactory.universalChunkSize.z));
+        return new Vector3Int(Mathf.FloorToInt(position.x/IChunkFactory.universalChunkSize.x/IChunkFactory.universalCellSize.x),
+            Mathf.FloorToInt(position.y/IChunkFactory.universalChunkSize.y/IChunkFactory.universalCellSize.y),
+            Mathf.FloorToInt(position.z/IChunkFactory.universalChunkSize.z/IChunkFactory.universalCellSize.z));
     }
     
     /// <summary>
@@ -122,8 +123,7 @@ public class Chunk : MonoBehaviour
 
     public void ShowDotFieldGizmo()
     {
-        ProcedualGeneratorUtility.ShowDotFieldGizmo(transform.position,
-            new Vector3Int(chunkSize.x+1,chunkSize.y+1,chunkSize.z+1), dotField);
+        ProcedualGeneratorUtility.ShowDotFieldGizmo(transform.position, dotFieldSize, dotField);
     }
     
     public void HideMesh()
@@ -144,6 +144,12 @@ public class Chunk : MonoBehaviour
     public void SetLODLevel(LODLevel level)
     {
         lodLevel = level;
+    }
+    
+    public void SetDotField(Vector4[] m_dotField, Vector3Int m_dotFieldSize)
+    {
+        dotField = m_dotField;
+        dotFieldSize = m_dotFieldSize;
     }
 
     void ShowMeshNormal()

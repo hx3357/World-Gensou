@@ -8,6 +8,7 @@ public class ChunkDispatcher : MonoBehaviour
    public Transform playerTransform;
    
    public float maxViewDistance = 5;
+   public Material chunkMaterial;
    
    [Header("Marching Cube")]
    [Range(0,1)]
@@ -58,11 +59,11 @@ public class ChunkDispatcher : MonoBehaviour
 
    void Initialize()
    {
-      Chunk.SetUniversalChunkSize(32 * Vector3Int.one,Vector3.one);
+      Chunk.SetUniversalChunkSize(32 * Vector3Int.one,1*Vector3.one);
       downSampler = new GPUTrilinearScalerFieldDownSampler(downSampleCS);
       scalerFieldGenerator = new PerlinNoiseScalerFieldGenerator_2D
          (ocatves, scale, persistance, lacunarity, seed,maxHeight,heightMapping,heightOffset,heightScale);
-      chunkFactory = gameObject.AddComponent<McChunkFactoryV2>();
+      chunkFactory = gameObject.AddComponent<McChunkFactory>();
       chunkFactory.SetParameters(scalerFieldGenerator,2,downSampler);
       if(chunkFactory is McChunkFactory value)
          value.SetExclusiveParameters(marchingCubeCS,isoSurface,lerpParam);
@@ -86,8 +87,9 @@ public class ChunkDispatcher : MonoBehaviour
                   {
                      if(!chunks.ContainsKey(chunkCoord))
                      {
-                        Chunk chunk = chunkFactory.ProduceChunk(chunkCoord);
-                        chunks.Add(chunkCoord,chunk);
+                        Chunk chunk = chunkFactory.ProduceChunk(chunkCoord,chunkMaterial);
+                        if(chunk != null)
+                           chunks.Add(chunkCoord,chunk);
                      }
                   }
                   else
