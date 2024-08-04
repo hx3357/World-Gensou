@@ -7,6 +7,8 @@ public class ChunkDispatcher : MonoBehaviour
 {
    public Transform playerTransform;
    
+   public float maxViewDistance = 5;
+   
    [Header("Marching Cube")]
    [Range(0,1)]
    public float isoSurface = 0.5f;
@@ -36,10 +38,7 @@ public class ChunkDispatcher : MonoBehaviour
    
    private Dictionary<Vector3Int,Chunk> chunks = new Dictionary<Vector3Int, Chunk>();
    
-   /// <summary>
-   /// Max view distance of each LOD level
-   /// </summary>
-   public List<int> lodViewDistanceTable;
+   
    
    private void Start()
    {
@@ -57,16 +56,6 @@ public class ChunkDispatcher : MonoBehaviour
       }
    }
 
-   Chunk.LODLevel GetLODLevelByDistance(float distance)
-   {
-      for(int i = 0;i<lodViewDistanceTable.Count;i++)
-      {
-         if(distance <= lodViewDistanceTable[i])
-            return (Chunk.LODLevel)i;
-      }
-      return (Chunk.LODLevel)int.MaxValue;
-   }
-
    void Initialize()
    {
       Chunk.SetUniversalChunkSize(32 * Vector3Int.one,Vector3.one);
@@ -74,7 +63,7 @@ public class ChunkDispatcher : MonoBehaviour
       scalerFieldGenerator = new PerlinNoiseScalerFieldGenerator_2D
          (ocatves, scale, persistance, lacunarity, seed,maxHeight,heightMapping,heightOffset,heightScale);
       chunkFactory = gameObject.AddComponent<McChunkFactoryV2>();
-      chunkFactory.SetParameters(scalerFieldGenerator,1,downSampler);
+      chunkFactory.SetParameters(scalerFieldGenerator,2,downSampler);
       if(chunkFactory is McChunkFactory value)
          value.SetExclusiveParameters(marchingCubeCS,isoSurface,lerpParam);
    }
@@ -85,35 +74,31 @@ public class ChunkDispatcher : MonoBehaviour
 
       Vector3Int _playerChunkCoord = Chunk.GetChunkCoordByPosition(playerPosition);
       
-      int maxViewDistance = lodViewDistanceTable[^1];
+      int celledMaxViewDistance = Mathf.CeilToInt(maxViewDistance)+1;
       
-      for(int x = -maxViewDistance;x<=maxViewDistance;x++)
-         for(int y = -maxViewDistance;y<=maxViewDistance;y++)
-            for(int z = -maxViewDistance;z<=maxViewDistance;z++)
+      for(int x = -celledMaxViewDistance;x<=celledMaxViewDistance;x++)
+         for(int y = -celledMaxViewDistance;y<=celledMaxViewDistance;y++)
+            for(int z = -celledMaxViewDistance;z<=celledMaxViewDistance;z++)
             {
                Vector3Int chunkCoord = _playerChunkCoord + new Vector3Int(x,y,z);
                float distance = Vector3Int.Distance(chunkCoord,_playerChunkCoord);
-               Chunk.LODLevel currentLodLevel = GetLODLevelByDistance(distance);
-               if (currentLodLevel == (Chunk.LODLevel)int.MaxValue)
-               {
-                  if(chunks.ContainsKey(chunkCoord))
+                 if(distance <= maxViewDistance)
                   {
-                     chunks[chunkCoord].DestroyChunk();
-                     chunks.Remove(chunkCoord);
+                     if(!chunks.ContainsKey(chunkCoord))
+                     {
+                        Chunk chunk = chunkFactory.ProduceChunk(chunkCoord);
+                        chunks.Add(chunkCoord,chunk);
+                     }
                   }
-                  continue;
-               }
-               if(!chunks.ContainsKey(chunkCoord))
-               {
-                  Chunk chunk = chunkFactory.ProduceChunk(chunkCoord,currentLodLevel);
-                  chunks.Add(chunkCoord,chunk);
-               }
-               else
-               {
-                  Chunk currentChunk = chunks[chunkCoord];
-                  if (currentChunk.lodLevel != currentLodLevel)
-                     chunkFactory.SetChunk(currentChunk,currentLodLevel);
-               }
+                  else
+                  {
+                     if(chunks.ContainsKey(chunkCoord))
+                     {
+                        Chunk chunk = chunks[chunkCoord];
+                        chunk.DestroyChunk();
+                        chunks.Remove(chunkCoord);
+                     }
+                  }
             }
    }
 }

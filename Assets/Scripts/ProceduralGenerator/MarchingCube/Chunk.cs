@@ -34,6 +34,14 @@ public class Chunk : MonoBehaviour
         {LODLevel.Culling,0}
     };
     
+    /// <summary>
+    /// Max view distance of each LOD level
+    /// </summary>
+    public static readonly List<int> lodViewDistanceTable = new List<int>()
+    {
+        3,5,10
+    };
+    
     public LODLevel lodLevel = LODLevel.High;
     
     public bool isShowVolumeGizmo ;
@@ -74,6 +82,21 @@ public class Chunk : MonoBehaviour
         return new Vector3Int(Mathf.FloorToInt(position.x/IChunkFactory.universalChunkSize.x),
             Mathf.FloorToInt(position.y/IChunkFactory.universalChunkSize.y),
             Mathf.FloorToInt(position.z/IChunkFactory.universalChunkSize.z));
+    }
+    
+    /// <summary>
+    /// If chunk is too far away from player, exceeding the distance table, it will return int max value
+    /// </summary>
+    /// <param name="distance"></param>
+    /// <returns></returns>
+    public static LODLevel GetLODLevelByDistance(float distance)
+    {
+        for(int i = 0;i<lodViewDistanceTable.Count;i++)
+        {
+            if(distance <= lodViewDistanceTable[i])
+                return (LODLevel)i;
+        }
+        return (LODLevel)int.MaxValue;
     }
     #endregion
     

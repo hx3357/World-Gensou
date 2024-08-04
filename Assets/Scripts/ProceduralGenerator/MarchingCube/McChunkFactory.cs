@@ -300,8 +300,7 @@ public class McChunkFactory: MonoBehaviour, IChunkFactory
         float m_downSampleRate,IScalerFieldDownSampler m_downSampler)
     {
         this.scalerFieldGenerator = m_scalerFieldGenerator;
-        this.downSampler = m_downSampler;
-        this.downSampleRate = m_downSampleRate;
+        SetDownSampler(m_downSampler,m_downSampleRate);
     }
     
     public void SetExclusiveParameters(ComputeShader m_cs,float m_isoSurface,float m_lerpParam)
