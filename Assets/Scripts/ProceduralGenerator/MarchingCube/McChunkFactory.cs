@@ -8,6 +8,7 @@ using Unity.Burst;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Mathematics;
 using Debug = UnityEngine.Debug;
+using Random = Unity.Mathematics.Random;
 
 public class McChunkFactory: MonoBehaviour, IChunkFactory
 {
@@ -59,6 +60,15 @@ public class McChunkFactory: MonoBehaviour, IChunkFactory
         triangleCountBuffer = new ComputeBuffer(1, sizeof(int), ComputeBufferType.Raw);
     }
     
+    void InitBuffer(Vector3Int m_dotFieldSize)
+    {
+        pointBuffer = new ComputeBuffer(m_dotFieldSize.x*m_dotFieldSize.y*m_dotFieldSize.z, sizeof(float)*4);
+        triangleBuffer = new ComputeBuffer(5*m_dotFieldSize.x*m_dotFieldSize.y*m_dotFieldSize.z, 
+            Triangle.SizeOf, ComputeBufferType.Append);
+        triangleBuffer.SetCounterValue(0);
+        triangleCountBuffer = new ComputeBuffer(1, sizeof(int), ComputeBufferType.Raw);
+    }
+    
     void ReleaseBuffer()
     {
         pointBuffer.Release();
@@ -77,6 +87,19 @@ public class McChunkFactory: MonoBehaviour, IChunkFactory
         cs.Dispatch(kernel, Mathf.CeilToInt(dotFieldSize.x / (float)numofThreads), 
             Mathf.CeilToInt(dotFieldSize.y / (float)numofThreads), 
             Mathf.CeilToInt(dotFieldSize.z / (float)numofThreads));
+    }
+    
+    void RunMarchingCubeComputeShader(Vector3Int m_dotFieldSize)
+    {
+        int kernel = cs.FindKernel("CSMain");
+        cs.SetInts(Size, m_dotFieldSize.x, m_dotFieldSize.y, m_dotFieldSize.z);
+        cs.SetFloat(IsoSurface, isoSurface);
+        cs.SetFloat(LerpParam, lerpParam);
+        cs.SetBuffer(kernel,InputPoints,pointBuffer);
+        cs.SetBuffer(kernel, OutputTriangles, triangleBuffer);
+        cs.Dispatch(kernel, Mathf.CeilToInt(m_dotFieldSize.x / (float)numofThreads), 
+            Mathf.CeilToInt(m_dotFieldSize.y / (float)numofThreads), 
+            Mathf.CeilToInt(m_dotFieldSize.z / (float)numofThreads));
     }
     
     [BurstCompile]
@@ -149,6 +172,37 @@ public class McChunkFactory: MonoBehaviour, IChunkFactory
         chunk.ShowMesh();
     }
     
+    IEnumerator DispatchMeshGenerationJobCoroutine(Chunk chunk,Triangle[] _triangles)
+    {
+        GenerateMeshJob job = new()
+        {
+            triangles = new NativeArray<Triangle>(_triangles, Allocator.Persistent),
+            vertices = new(0, Allocator.Persistent),
+            indices = new(0,Allocator.Persistent),
+            vertexIndexMap = new(_triangles.Length, Allocator.Persistent)
+        };
+        JobHandle handle = job.Schedule();
+        while (!handle.IsCompleted)
+            yield return null;
+        handle.Complete();
+        chunkMesh = new();
+        Vector3[] vertices = new Vector3[job.vertices.Length];
+        int[] indices = new int[job.indices.Length];
+        job.vertices.AsArray().Reinterpret<Vector3>().CopyTo(vertices);
+        job.indices.AsArray().CopyTo(indices);
+        job.vertices.Dispose();
+        job.indices.Dispose();
+        job.triangles.Dispose();
+        job.vertexIndexMap.Dispose();
+        chunkMesh.vertices = vertices;
+        chunkMesh.triangles = indices;
+        chunkMesh.RecalculateNormals();
+        chunkMesh.RecalculateBounds();
+        chunkMesh.RecalculateTangents();
+        chunk.SetMesh(chunkMesh);
+        chunk.ShowMesh();
+    }
+    
     protected Chunk CreateChunkObject()
     {
         GameObject chunkObject = new GameObject("Chunk")
@@ -184,13 +238,15 @@ public class McChunkFactory: MonoBehaviour, IChunkFactory
         cellSize = m_cellSize;
         isoSurface = m_isoSurface;
         lerpParam = m_lerpParam;
-        cellSize = m_cellSize;
-        (Vector4[] _dotField,bool isZeroFlag) = scalerFieldGenerator.GenerateDotField(origin, dotFieldSize, cellSize);
+     
+        Vector4[] _dotField = scalerFieldGenerator.GenerateDotField(origin, dotFieldSize, cellSize,out bool isZeroFlag);
         if(isZeroFlag)
         {
             return false;
         }
         dotField = _dotField;
+        Stopwatch sw = new();
+        sw.Start();
         Vector4[] dotFieldDownSampled = downSampler?.DownSample(_dotField, dotFieldSize, cellSize, downSampleRate,
             out dotFieldSize, out chunkSize, out cellSize);
         InitBuffer();
@@ -203,36 +259,90 @@ public class McChunkFactory: MonoBehaviour, IChunkFactory
         triangles = new Triangle[triangleCount];
         triangleBuffer.GetData(triangles, 0, 0, triangleCount);
         ReleaseBuffer();
+        sw.Stop();
+        Debug.Log("Marching Cube Time: "+sw.ElapsedMilliseconds);
         return true;
+    }
+    
+    
+    
+    IEnumerator ProduceChunkCoroutine(Chunk chunk)
+    {
+        Vector3 _origin = origin;
+        Vector3Int _chunkSize = chunkSize;
+        Vector3 _cellSize = cellSize;
+        Vector3Int _dotFieldSize = dotFieldSize;
+        
+        //Generate Dot Field
+        Vector4[] _dotField = scalerFieldGenerator.GenerateDotField(_origin, _dotFieldSize, _cellSize,out bool isZeroFlag);
+        if(isZeroFlag)
+            yield break;
+        chunk.SetDotField(_dotField,_dotFieldSize);
+        yield return null;
+        
+        float roulette = UnityEngine.Random.Range(0,1f);
+        if(roulette>0.5)
+            yield return null;
+        
+        //Down Sample
+        Vector4[] dotFieldDownSampled = downSampler?.DownSample(_dotField, _dotFieldSize, _cellSize, downSampleRate,
+            out _dotFieldSize, out _chunkSize, out _cellSize);
+        yield return null;
+        
+        roulette = UnityEngine.Random.Range(0,1f);
+        if(roulette>0.5)
+            yield return null;
+        
+        //Marching Cube
+        InitBuffer(_dotFieldSize);
+        pointBuffer.SetData(dotFieldDownSampled);
+        RunMarchingCubeComputeShader(_dotFieldSize);
+        ComputeBuffer.CopyCount(triangleBuffer,triangleCountBuffer,0);
+        int[] count = new int[1];
+        triangleCountBuffer.GetData(count);
+        int triangleCount = count[0];
+        Triangle[] _triangles = new Triangle[triangleCount];
+        triangleBuffer.GetData(_triangles, 0, 0, triangleCount);
+        ReleaseBuffer();
+        yield return null;
+        
+        roulette = UnityEngine.Random.Range(0,1f);
+        if(roulette>0.5)
+            yield return null;
+        
+        //Generate Mesh
+        StartCoroutine(DispatchMeshGenerationJobCoroutine(chunk,_triangles));
     }
 
     #endregion
 
     #region ExposingAPI   
 
-    public virtual Chunk ProduceChunk(Vector3 m_center, Vector3Int m_chunkSize, Vector3 m_cellSize, Material m_chunkMaterial = null)
+    public virtual Chunk ProduceChunk(Vector3 m_origin, Vector3Int m_chunkSize, Vector3 m_cellSize, Material m_chunkMaterial = null)
     {
-        bool isGenerateMesh = PrepareChunkMesh(m_center, m_chunkSize, m_cellSize, isoSurface, lerpParam);
+        origin = m_origin;
+        chunkSize =m_chunkSize;
+        cellSize = m_cellSize;
+        originDotFieldSize = dotFieldSize = new Vector3Int(m_chunkSize.x+1,m_chunkSize.y+1,m_chunkSize.z+1);
+        
+        //Create Chunk
         GameObject chunkObject = new GameObject("Chunk");
         Chunk chunk = chunkObject.AddComponent<Chunk>();
         chunk.HideMesh();
         chunkMaterial = m_chunkMaterial!=null ? m_chunkMaterial : new Material(Shader.Find("Universal Render Pipeline/Lit"));
-        chunkObject.transform.position = m_center;
+        chunkObject.transform.position = m_origin;
         chunk.SetVolume(origin,chunkSize,cellSize);
         chunk.SetMesh(chunkMesh);
         chunk.SetMaterial(chunkMaterial);
-        chunk.SetDotField(dotField,originDotFieldSize);
-        if(isGenerateMesh)
-        {
-            chunk.ShowMesh();
-            StartCoroutine(DispatchMeshGenerationJobCoroutine(chunk));
-        }
+        
+        StartCoroutine(ProduceChunkCoroutine(chunk));
+        
         return chunk;
     }
     
-    public Chunk ProduceChunk(Vector3 m_center,Material m_chunkMaterial=null)
+    public Chunk ProduceChunk(Vector3 m_origin,Material m_chunkMaterial=null)
     {
-       return ProduceChunk(m_center,IChunkFactory.universalChunkSize,IChunkFactory.universalCellSize,m_chunkMaterial);
+       return ProduceChunk(m_origin,IChunkFactory.universalChunkSize,IChunkFactory.universalCellSize,m_chunkMaterial);
     }
     
     public Chunk ProduceChunk(Vector3Int chunkCoord, Chunk.LODLevel lodLevel ,Material m_chunkMaterial = null)

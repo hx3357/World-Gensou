@@ -80,7 +80,7 @@ public sealed class PerlinNoiseScalerFieldGenerator_2D : IScalerFieldGenerator
         return noiseMap;
     }
 
-    public (Vector4[],bool) GenerateDotField(Vector3 origin, Vector3Int dotfieldSize, Vector3 m_cellsize)
+    public Vector4[] GenerateDotField(Vector3 origin, Vector3Int dotfieldSize, Vector3 m_cellsize,out bool isEmptyFlag)
     {
         offset = origin;
         size = dotfieldSize;
@@ -89,7 +89,8 @@ public sealed class PerlinNoiseScalerFieldGenerator_2D : IScalerFieldGenerator
         dotField = new Vector4[size.x* size.y*size.z];
         bool isAirFlag = origin.y>maxHeight;
         bool isUnderGroundFlag = origin.y<0;
-        if(!(isAirFlag || isUnderGroundFlag))
+        isEmptyFlag = isAirFlag || isUnderGroundFlag;
+        if(!isEmptyFlag)
             for (int x = 0; x < size.x; x++)
             {
                 for (int z = 0; z < size.z; z++)
@@ -105,6 +106,6 @@ public sealed class PerlinNoiseScalerFieldGenerator_2D : IScalerFieldGenerator
                     }
                 }
             }
-        return (dotField, isAirFlag || isUnderGroundFlag);
+        return dotField;
     }
 }

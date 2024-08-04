@@ -290,7 +290,7 @@ Transform:
   m_GameObject: {fileID: 614957185}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 8.8, y: 0, z: 8.6}
+  m_LocalPosition: {x: -29.7, y: -7.8, z: -11.2}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1030,6 +1030,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   playerTransform: {fileID: 614957189}
+  maxViewDistance: 5
+  chunkMaterial: {fileID: 2100000, guid: 8908da3cb4f92e448a332896de150c86, type: 2}
   isoSurface: 0.5
   lerpParam: 0.29
   ocatves: 4
@@ -1066,7 +1068,6 @@ MonoBehaviour:
   heightScale: 0.261
   marchingCubeCS: {fileID: 7200000, guid: 4bba0040eb28b7a41b5ca143899498f6, type: 3}
   downSampleCS: {fileID: 7200000, guid: 5713efbca54cca3499c852a51d6bb888, type: 3}
-  lodViewDistanceTable: 03000000040000000600000008000000
 --- !u!4 &2138166798
 Transform:
   m_ObjectHideFlags: 0

@@ -9,10 +9,10 @@ public interface IChunkFactory
     public static Vector3Int universalChunkSize;
     public static Vector3 universalCellSize;
     
-    public Chunk ProduceChunk(Vector3 m_center, Vector3Int m_chunkSize, Vector3 m_cellSize,
+    public Chunk ProduceChunk(Vector3 m_origin, Vector3Int m_chunkSize, Vector3 m_cellSize,
         Material m_chunkMaterial = null);
     
-    public Chunk ProduceChunk(Vector3 m_center, Material m_chunkMaterial = null);
+    public Chunk ProduceChunk(Vector3 m_origin, Material m_chunkMaterial = null);
     
     public Chunk ProduceChunk(Vector3Int chunkCoord, Material m_chunkMaterial = null);
     
