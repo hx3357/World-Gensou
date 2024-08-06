@@ -104,7 +104,8 @@ public class Chunk : MonoBehaviour
     public void SetMesh(Mesh m_mesh)
     {
         mesh = m_mesh;
-        meshFilter.mesh = mesh;
+        if(meshFilter!=null)
+            meshFilter.mesh = mesh;
     }
     
     public void SetMaterial(Material material)
@@ -128,12 +129,14 @@ public class Chunk : MonoBehaviour
     
     public void HideMesh()
     {
-        meshRenderer.enabled = false;
+        if(meshFilter!=null)
+            meshRenderer.enabled = false;
     }
     
     public void ShowMesh()
     {
-        meshRenderer.enabled = true;
+        if(meshFilter!=null)
+            meshRenderer.enabled = true;
     }
 
     public void DestroyChunk()

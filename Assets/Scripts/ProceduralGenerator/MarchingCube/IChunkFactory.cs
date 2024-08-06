@@ -36,11 +36,11 @@ public interface IChunkFactory
     public void SetChunk(Chunk chunk,Chunk.LODLevel lodLevel);
     
     public void SetChunk(Chunk chunk);
-
+    
     public void SetParameters(IScalerFieldGenerator m_scalerFieldGenerator);
-
+    
     public void SetParameters(IScalerFieldGenerator m_scalerFieldGenerator, 
-        float m_downSampleRate, IScalerFieldDownSampler m_downSampler);
+        float m_downSampleRate, ComputeShader m_downSampleCS);
 }
 
 

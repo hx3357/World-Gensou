@@ -4,8 +4,9 @@ using UnityEngine;
 
 public class CPUTrilinearScalerFieldDownSampler : IScalerFieldDownSampler
 {
+    Vector4[] currentDotField;
     
-    public Vector4[] DownSample(Vector4[] dotField,Vector3Int m_dotFieldCount,Vector3 cellSize,float downSampleRate,
+    public void StartDownSample(Vector4[] dotField,Vector3Int m_dotFieldCount,Vector3 cellSize,float downSampleRate,
         out Vector3Int m_newDotFieldSize,out Vector3Int m_newChunkSize,out Vector3 m_newCellSize)
     {
         m_newDotFieldSize = new Vector3Int((int)(m_dotFieldCount.x / downSampleRate), 
@@ -16,7 +17,7 @@ public class CPUTrilinearScalerFieldDownSampler : IScalerFieldDownSampler
             (m_dotFieldCount.y-1) / (float)(m_newChunkSize.y) * cellSize.y, 
             (m_dotFieldCount.z-1) / (float)(m_newChunkSize.z) * cellSize.z);
         if(downSampleRate<= 1)
-            return dotField;
+            currentDotField = dotField;
         Vector4[] newDotField = new Vector4[m_newDotFieldSize.x * m_newDotFieldSize.y * m_newDotFieldSize.z];
         for (int x = 0; x < m_newDotFieldSize.x; x++)
         {
@@ -55,6 +56,16 @@ public class CPUTrilinearScalerFieldDownSampler : IScalerFieldDownSampler
                 }
             }
         }
-        return newDotField;
+        currentDotField = newDotField;
+    }
+    
+    public bool GetState()
+    {
+        return true;
+    }
+    
+    public Vector4[] GetDownSampledDotField()
+    {
+        return currentDotField;
     }
 }

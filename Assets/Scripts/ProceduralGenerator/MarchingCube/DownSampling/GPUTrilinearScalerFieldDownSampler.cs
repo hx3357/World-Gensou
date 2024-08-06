@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Rendering;
 
 public class GPUTrilinearScalerFieldDownSampler : IScalerFieldDownSampler
 {
@@ -21,6 +22,10 @@ public class GPUTrilinearScalerFieldDownSampler : IScalerFieldDownSampler
     private static readonly int NewCellSize = Shader.PropertyToID("newCellSize");
     private static readonly int OldDotField = Shader.PropertyToID("oldDotField");
     private static readonly int NewDotField = Shader.PropertyToID("newDotField");
+    
+    private bool isDownSampled = false;
+    
+    private AsyncGPUReadbackRequest request;
 
     public GPUTrilinearScalerFieldDownSampler(ComputeShader downSamplerShader)
     {
@@ -53,9 +58,10 @@ public class GPUTrilinearScalerFieldDownSampler : IScalerFieldDownSampler
         downSamplerShader.Dispatch(kernel, Mathf.CeilToInt(newDotFieldCount.x / 8.0f), 
             Mathf.CeilToInt(newDotFieldCount.y / 8.0f), 
             Mathf.CeilToInt(newDotFieldCount.z / 8.0f));
+        request = AsyncGPUReadback.Request(newDotFieldBuffer, newDotField.Length*sizeof(float)*4,0);
     }
     
-    public Vector4[] DownSample(Vector4[] dotField, Vector3Int m_dotFieldCount, Vector3 cellSize, float downSampleRate,
+    public void StartDownSample(Vector4[] dotField, Vector3Int m_dotFieldCount, Vector3 cellSize, float downSampleRate,
         out Vector3Int m_newDotFieldSize ,out Vector3Int m_newChunkSize, out Vector3 m_newCellSize)
     {
         oldDotField = dotField;
@@ -68,11 +74,38 @@ public class GPUTrilinearScalerFieldDownSampler : IScalerFieldDownSampler
             (m_dotFieldCount.y-1) / (float)(m_newChunkSize.y) * cellSize.y, 
             (m_dotFieldCount.z-1) / (float)(m_newChunkSize.z) * cellSize.z);
         if(downSampleRate<= 1)
-            return dotField;
+            newDotField = oldDotField;
         InitBuffer();
         RunDownSampleComputeShader();
-        newDotFieldBuffer.GetData(newDotField);
+        
+    }
+    
+    public bool GetState()
+    {
+        if(request.hasError)
+        {
+            Debug.LogError("DownSample Compute Shader Error");
+            ReleaseBuffer();
+            isDownSampled = false;
+            return false;
+        }
+        if(request.done)
+        {
+            isDownSampled = true;
+        }
+        return request.done;
+    }
+    
+    public Vector4[] GetDownSampledDotField()
+    {
+        if (!isDownSampled)
+        {
+            Debug.LogError("DownSampled Dot Field is not ready");
+            return null;
+        }
+        request.GetData<Vector4>().CopyTo(newDotField);
         ReleaseBuffer();
+        isDownSampled = false;
         return newDotField;
     }
 }

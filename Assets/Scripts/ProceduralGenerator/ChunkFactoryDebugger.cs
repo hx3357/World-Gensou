@@ -60,7 +60,7 @@ public class ChunkFactoryDebugger : MonoBehaviour
         scalerFieldGenerator = new PerlinNoiseScalerFieldGenerator_2D
             (ocatves, scale, persistance, lacunarity, seed,maxHeight,heightMapping,heightOffset,heightScale);
         mcChunkFactory = gameObject.AddComponent<McChunkFactory>();
-        mcChunkFactory.SetParameters(scalerFieldGenerator,downSampleRate,downSampler);
+        mcChunkFactory.SetParameters(scalerFieldGenerator,downSampleRate,downSampleCS);
         if(mcChunkFactory is McChunkFactory value)
             value.SetExclusiveParameters(marchingCubeCS,isoSurface,lerpParam);
     }
@@ -107,12 +107,12 @@ public class ChunkFactoryDebugger : MonoBehaviour
          Chunk.SetUniversalChunkSize(chunkSize,cellSize*Vector3.one);
          scalerFieldGenerator = new PerlinNoiseScalerFieldGenerator_2D
              (ocatves, scale, persistance, lacunarity, seed,maxHeight,heightMapping,heightOffset,heightScale);
-         mcChunkFactory?.SetParameters(scalerFieldGenerator,downSampleRate,downSampler);
+         mcChunkFactory?.SetParameters(scalerFieldGenerator,downSampleRate,downSampleCS);
          if(mcChunkFactory is McChunkFactory value)
              value.SetExclusiveParameters(marchingCubeCS,isoSurface,lerpParam);
          if(chunk!=null)
          {
-             mcChunkFactory?.SetChunk(chunk,lodLevel);
+              mcChunkFactory?.SetChunk(chunk,lodLevel);
              // chunk.gameObject.SetActive(false);
              // chunk = mcChunkFactory.ProduceChunk(offset);
          }

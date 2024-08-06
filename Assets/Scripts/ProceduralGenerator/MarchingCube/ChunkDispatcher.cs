@@ -64,7 +64,7 @@ public class ChunkDispatcher : MonoBehaviour
       scalerFieldGenerator = new PerlinNoiseScalerFieldGenerator_2D
          (ocatves, scale, persistance, lacunarity, seed,maxHeight,heightMapping,heightOffset,heightScale);
       chunkFactory = gameObject.AddComponent<McChunkFactory>();
-      chunkFactory.SetParameters(scalerFieldGenerator,2,downSampler);
+      chunkFactory.SetParameters(scalerFieldGenerator,2,downSampleCS);
       if(chunkFactory is McChunkFactory value)
          value.SetExclusiveParameters(marchingCubeCS,isoSurface,lerpParam);
    }
