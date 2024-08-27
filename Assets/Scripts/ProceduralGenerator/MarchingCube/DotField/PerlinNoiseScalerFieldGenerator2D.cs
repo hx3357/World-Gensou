@@ -2,7 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public sealed class PerlinNoiseScalerFieldGenerator_2D : IScalerFieldGenerator
+public sealed class PerlinNoiseScalerFieldGenerator2D : IScalerFieldGenerator
 {
     private Vector4[] dotField;
     private Vector3Int size;
@@ -16,8 +16,9 @@ public sealed class PerlinNoiseScalerFieldGenerator_2D : IScalerFieldGenerator
     private float heightScale;
     private Vector2 randomOffset;
     private Vector3 cellsize;
+    private bool isEmptyFlag = false;
     
-    public PerlinNoiseScalerFieldGenerator_2D(int m_octaves,float m_scale,float m_persistance,
+    public PerlinNoiseScalerFieldGenerator2D(int m_octaves,float m_scale,float m_persistance,
         float m_lacunarity,int m_seed,float maxHeight,AnimationCurve heightMapping,float heightOffset,float heightScale)
     {
         SetParameters(m_octaves,m_scale,m_persistance,m_lacunarity,m_seed,offset, maxHeight, heightMapping,
@@ -30,7 +31,7 @@ public sealed class PerlinNoiseScalerFieldGenerator_2D : IScalerFieldGenerator
         randomOffset = new Vector2(prng.Next(-100000, 100000), prng.Next(-100000, 100000));
     }
 
-    public void SetParameters(int m_octaves, float m_scale,float m_persistance, float m_lacunarity,int m_seed,
+    void SetParameters(int m_octaves, float m_scale,float m_persistance, float m_lacunarity,int m_seed,
         Vector2 m_offset,float m_maxHeight,AnimationCurve m_heightMapping,float m_heightOffset,float m_heightScale)
     {
         octaves = m_octaves;
@@ -80,7 +81,7 @@ public sealed class PerlinNoiseScalerFieldGenerator_2D : IScalerFieldGenerator
         return noiseMap;
     }
 
-    public Vector4[] GenerateDotField(Vector3 origin, Vector3Int dotfieldSize, Vector3 m_cellsize,out bool isEmptyFlag)
+    public ScalerFieldRequestData StartGenerateDotField(Vector3 origin, Vector3Int dotfieldSize, Vector3 m_cellsize)
     {
         offset = origin;
         size = dotfieldSize;
@@ -102,10 +103,21 @@ public sealed class PerlinNoiseScalerFieldGenerator_2D : IScalerFieldGenerator
                         float noiseValue = noiseMap[x, z];
                         int dotScalar =  pos.y+origin.y>maxHeight*heightMapping.Evaluate(heightScale* noiseValue+heightOffset)  ? 1 : 0;
                         dotField[ProcedualGeneratorUtility.GetBufferIndex(x, y, z, size)].w = dotScalar;
-                        
                     }
                 }
             }
+
+        return new ScalerFieldRequestData();
+    }
+    
+    public bool GetState(ScalerFieldRequestData scalerFieldRequestData)
+    {
+        return true;
+    }
+    
+    public Vector4[] GetDotField(ScalerFieldRequestData scalerFieldRequestData, out bool isEmptyFlag)
+    {
+        isEmptyFlag = this.isEmptyFlag;
         return dotField;
     }
 }

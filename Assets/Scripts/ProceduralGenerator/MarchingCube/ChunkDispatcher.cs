@@ -8,7 +8,10 @@ public class ChunkDispatcher : MonoBehaviour
    public Transform playerTransform;
    
    public float maxViewDistance = 5;
+   public int chunkSize = 32;
+   public float cellSize = 1;
    public Material chunkMaterial;
+   public float downSampleRate = 1;
    
    [Header("Marching Cube")]
    [Range(0,1)]
@@ -30,6 +33,7 @@ public class ChunkDispatcher : MonoBehaviour
    [Header("Compute Shader")]
    public ComputeShader marchingCubeCS;
    public ComputeShader downSampleCS;
+   public ComputeShader perlinNoise3DCS;
    
    private Vector3Int playerChunkCoord,lastPlayerChunkCoord;
    
@@ -38,8 +42,6 @@ public class ChunkDispatcher : MonoBehaviour
    private IScalerFieldDownSampler downSampler;
    
    private Dictionary<Vector3Int,Chunk> chunks = new Dictionary<Vector3Int, Chunk>();
-   
-   
    
    private void Start()
    {
@@ -59,12 +61,23 @@ public class ChunkDispatcher : MonoBehaviour
 
    void Initialize()
    {
-      Chunk.SetUniversalChunkSize(32 * Vector3Int.one,1*Vector3.one);
+      Chunk.SetUniversalChunkSize(chunkSize * Vector3Int.one,cellSize *Vector3.one);
+      
+      //Set up the down sampler
       downSampler = new GPUTrilinearScalerFieldDownSampler(downSampleCS);
-      scalerFieldGenerator = new PerlinNoiseScalerFieldGenerator_2D
+         
+      //Set up the scaler field generator
+      
+      scalerFieldGenerator = new PerlinNoiseScalerFieldGenerator2D
          (ocatves, scale, persistance, lacunarity, seed,maxHeight,heightMapping,heightOffset,heightScale);
+      
+      //scalerFieldGenerator = new PerlinNoiseScalerFieldGenerator3D(seed,scale,isoSurface);
+      
+      //scalerFieldGenerator = new PerlinNoiseScalerFieldGenerator3D_GPU(perlinNoise3DCS,seed,scale,isoSurface);
+      
+      //Set up the chunk factory
       chunkFactory = gameObject.AddComponent<McChunkFactory>();
-      chunkFactory.SetParameters(scalerFieldGenerator,2,downSampleCS);
+      chunkFactory.SetParameters(scalerFieldGenerator,downSampleRate,downSampleCS);
       if(chunkFactory is McChunkFactory value)
          value.SetExclusiveParameters(marchingCubeCS,isoSurface,lerpParam);
    }

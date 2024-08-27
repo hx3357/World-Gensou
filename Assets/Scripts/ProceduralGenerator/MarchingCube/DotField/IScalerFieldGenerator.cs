@@ -11,8 +11,11 @@ public interface IScalerFieldGenerator
     /// <param name="origin">The origin of the chunk</param>
     /// <param name="dotfieldSize"> Cell count of the chunk</param>
     /// <param name="cellsize">Single cell size</param>
-    /// <param name="isEmptyFlag"></param>
-    public Vector4[] GenerateDotField(Vector3 origin,Vector3Int dotfieldSize,Vector3 cellsize,out bool isEmptyFlag);
+    public ScalerFieldRequestData StartGenerateDotField(Vector3 origin,Vector3Int dotfieldSize,Vector3 cellsize);
+    
+    public bool GetState(ScalerFieldRequestData scalerFieldRequestData);
+    
+    public Vector4[] GetDotField(ScalerFieldRequestData scalerFieldRequestData, out bool isEmptyFlag);
     
     
 }

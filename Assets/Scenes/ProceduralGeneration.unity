@@ -1031,15 +1031,18 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   playerTransform: {fileID: 614957189}
   maxViewDistance: 5
+  chunkSize: 31
+  cellSize: 4
   chunkMaterial: {fileID: 2100000, guid: 8908da3cb4f92e448a332896de150c86, type: 2}
-  isoSurface: 0.5
+  downSampleRate: 1
+  isoSurface: 0.897
   lerpParam: 0.29
   ocatves: 4
-  scale: 40
+  scale: 100
   persistance: 0.5
   lacunarity: 2
   seed: 114514
-  maxHeight: 74
+  maxHeight: 150
   heightMapping:
     serializedVersion: 2
     m_Curve:
@@ -1068,6 +1071,7 @@ MonoBehaviour:
   heightScale: 0.261
   marchingCubeCS: {fileID: 7200000, guid: 4bba0040eb28b7a41b5ca143899498f6, type: 3}
   downSampleCS: {fileID: 7200000, guid: 5713efbca54cca3499c852a51d6bb888, type: 3}
+  perlinNoise3DCS: {fileID: 7200000, guid: 838f0016716b31f4e835006efbcf2e48, type: 3}
 --- !u!4 &2138166798
 Transform:
   m_ObjectHideFlags: 0

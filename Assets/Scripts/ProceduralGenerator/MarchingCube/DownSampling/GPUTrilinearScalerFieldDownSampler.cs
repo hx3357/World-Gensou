@@ -77,7 +77,6 @@ public class GPUTrilinearScalerFieldDownSampler : IScalerFieldDownSampler
             newDotField = oldDotField;
         InitBuffer();
         RunDownSampleComputeShader();
-        
     }
     
     public bool GetState()

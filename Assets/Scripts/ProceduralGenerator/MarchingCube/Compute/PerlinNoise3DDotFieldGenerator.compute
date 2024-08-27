@@ -1,0 +1,37 @@
+// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel CSMain
+
+#include "Noise/noise3D.hlsl"
+#include "Includes/Utility.hlsl"
+
+int3 dotFieldSize;
+float3 origin;
+float cellSize;
+
+float scale;
+float isoLevel;
+float3 randomOffset;
+
+RWStructuredBuffer<float4> outputPoints;
+RWStructuredBuffer<int> isConcreteFlagBuffer;
+RWStructuredBuffer<int> isAirFlagBuffer;
+
+[numthreads(8,8,8)]
+void CSMain (uint3 id : SV_DispatchThreadID)
+{
+    if(id.x >= dotFieldSize.x || id.y >= dotFieldSize.y || id.z >= dotFieldSize.z)
+    {
+        return;
+    }
+    float3 localPos = float3(id) * cellSize;
+    float value = 1- ClassicNoise((origin+ localPos) / scale + randomOffset);
+    outputPoints[GetPointIndex(id.x, id.y, id.z, dotFieldSize)] = float4(localPos, value);
+    if(value> isoLevel)
+    {
+        InterlockedAdd(isConcreteFlagBuffer[0],-1);
+    }
+    else
+    {
+        InterlockedAdd(isAirFlagBuffer[0],-1);
+    }
+}

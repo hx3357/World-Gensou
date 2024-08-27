@@ -24,6 +24,8 @@ public interface IChunkFactory
     /// <param name="m_chunkMaterial">Chunk Material</param>
     /// <returns></returns>
     public Chunk ProduceChunk(Vector3Int chunkCoord,Chunk.LODLevel lodLevel, Material m_chunkMaterial = null);
+    
+    public void DeleteChunk(Vector3 m_origin);
 
     public void SetChunk(Chunk chunk, Vector3 m_center, Vector3Int m_chunkSize,
         Vector3 m_cellSize);
