@@ -200,6 +200,7 @@ public class McChunkFactory: MonoBehaviour, IChunkFactory
         Vector3Int _chunkSize = chunkSize;
         Vector3 _cellSize = cellSize;
         Vector3Int _dotFieldSize = dotFieldSize;
+        float _downSampleRate = downSampleRate;
         
         //Generate Dot Field
         ScalerFieldRequestData requestData = scalerFieldGenerator.StartGenerateDotField(_origin, _dotFieldSize, _cellSize);
@@ -213,10 +214,10 @@ public class McChunkFactory: MonoBehaviour, IChunkFactory
         // chunk.SetDotField(_dotField,_dotFieldSize);
         
         //Down Sample
-        if(downSampleRate>1)
+        if(_downSampleRate>1)
         {
             IScalerFieldDownSampler downSampler = new GPUTrilinearScalerFieldDownSampler(downSampleCS);
-            downSampler.StartDownSample(_dotField, _dotFieldSize, _cellSize, downSampleRate,
+            downSampler.StartDownSample(_dotField, _dotFieldSize, _cellSize, _downSampleRate,
                 out _dotFieldSize, out _chunkSize, out _cellSize);
             while(!downSampler.GetState())
                 yield return null;
@@ -302,34 +303,9 @@ public class McChunkFactory: MonoBehaviour, IChunkFactory
     #endregion
 
     #region ExposingAPI   
-
-    public virtual Chunk ProduceChunk(Vector3 m_origin, Vector3Int m_chunkSize, Vector3 m_cellSize, Material m_chunkMaterial = null)
-    {
-        if(currentProducingChunkSet.Contains(m_origin))
-            return null;
-        
-        origin = m_origin;
-        chunkSize =m_chunkSize;
-        cellSize = m_cellSize;
-        originDotFieldSize = dotFieldSize = new Vector3Int(m_chunkSize.x + 1, m_chunkSize.y + 1, m_chunkSize.z + 1);
-        currentProducingChunkSet.Add(m_origin);
-        
-        //Create Chunk
-        GameObject chunkObject = new GameObject("Chunk");
-        Chunk chunk = chunkObject.AddComponent<Chunk>();
-        chunk.HideMesh();
-        chunkMaterial = m_chunkMaterial!=null ? m_chunkMaterial : new Material(Shader.Find("Universal Render Pipeline/Lit"));
-        chunkObject.transform.position = m_origin;
-        chunk.SetVolume(origin,chunkSize,cellSize);
-        chunk.SetMesh(chunkMesh);
-        chunk.SetMaterial(chunkMaterial);
-        
-        StartCoroutine(ProduceChunkCoroutine(chunk));
-        
-        return chunk;
-    }
     
-    public virtual void ProduceChunkNew(Vector3 m_origin, Vector3Int m_chunkSize, Vector3 m_cellSize, Material m_chunkMaterial = null)
+    
+    public void ProduceChunk(Vector3 m_origin, Vector3Int m_chunkSize, Vector3 m_cellSize, Material m_chunkMaterial = null)
     {
         if(currentProducingChunkSet.Contains(m_origin)||chunkDict.ContainsKey(m_origin))
             return;
@@ -351,31 +327,33 @@ public class McChunkFactory: MonoBehaviour, IChunkFactory
         }
     }
     
-    public Chunk ProduceChunk(Vector3 m_origin,Material m_chunkMaterial=null)
+    public void DeleteChunk(Vector3Int m_coord)
     {
-       return ProduceChunk(m_origin,IChunkFactory.universalChunkSize,IChunkFactory.universalCellSize,m_chunkMaterial);
+        Vector3 m_origin = Chunk.GetChunkOriginByCoord(m_coord);
+        if(chunkDict.ContainsKey(m_origin))
+        {
+            Chunk chunk = chunkDict[m_origin];
+            chunk.DestroyChunk();
+            chunkDict.Remove(m_origin);
+        }
     }
     
-    public Chunk ProduceChunk(Vector3Int chunkCoord, Chunk.LODLevel lodLevel ,Material m_chunkMaterial = null)
+    public void ProduceChunk(Vector3 m_origin,Material m_chunkMaterial=null)
+    { 
+        ProduceChunk(m_origin,IChunkFactory.universalChunkSize,IChunkFactory.universalCellSize,m_chunkMaterial);
+    }
+    
+    public void ProduceChunk(Vector3Int chunkCoord, Chunk.LODLevel lodLevel ,Material m_chunkMaterial = null)
     {
         SetDownSampler(downSampleCS,Chunk.lodDownSampleRateTable[lodLevel]);
-        Chunk chunk = ProduceChunk(Chunk.GetChunkOriginByCoord(chunkCoord), IChunkFactory.universalChunkSize, 
+        ProduceChunk(Chunk.GetChunkOriginByCoord(chunkCoord), IChunkFactory.universalChunkSize, 
             IChunkFactory.universalCellSize, m_chunkMaterial);
-        if(chunk == null)
-            return null;
-        chunk.chunkCoord = chunkCoord;
-        chunk.SetLODLevel(lodLevel);
-        return chunk;
     }
     
-    public Chunk ProduceChunk(Vector3Int chunkCoord, Material m_chunkMaterial = null)
+    public void ProduceChunk(Vector3Int chunkCoord, Material m_chunkMaterial = null)
     {
-        Chunk chunk = ProduceChunk(Chunk.GetChunkOriginByCoord(chunkCoord),IChunkFactory.universalChunkSize, 
+        ProduceChunk(Chunk.GetChunkOriginByCoord(chunkCoord),IChunkFactory.universalChunkSize, 
             IChunkFactory.universalCellSize, m_chunkMaterial);
-        if(chunk == null)
-            return null;
-        chunk.chunkCoord = chunkCoord;
-        return chunk;
     }
     
     public virtual void SetChunk(Chunk chunk,Vector3 m_center,Vector3Int m_chunkSize,

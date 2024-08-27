@@ -41,7 +41,7 @@ public class ChunkDispatcher : MonoBehaviour
    private IScalerFieldGenerator scalerFieldGenerator;
    private IScalerFieldDownSampler downSampler;
    
-   private Dictionary<Vector3Int,Chunk> chunks = new Dictionary<Vector3Int, Chunk>();
+   private HashSet<Vector3Int> activeChunks = new HashSet<Vector3Int>();
    
    private void Start()
    {
@@ -68,12 +68,12 @@ public class ChunkDispatcher : MonoBehaviour
          
       //Set up the scaler field generator
       
-      scalerFieldGenerator = new PerlinNoiseScalerFieldGenerator2D
-         (ocatves, scale, persistance, lacunarity, seed,maxHeight,heightMapping,heightOffset,heightScale);
+      // scalerFieldGenerator = new PerlinNoiseScalerFieldGenerator2D
+      //    (ocatves, scale, persistance, lacunarity, seed,maxHeight,heightMapping,heightOffset,heightScale);
       
       //scalerFieldGenerator = new PerlinNoiseScalerFieldGenerator3D(seed,scale,isoSurface);
       
-      //scalerFieldGenerator = new PerlinNoiseScalerFieldGenerator3D_GPU(perlinNoise3DCS,seed,scale,isoSurface);
+      scalerFieldGenerator = new PerlinNoiseScalerFieldGenerator3D_GPU(perlinNoise3DCS,seed,scale,isoSurface);
       
       //Set up the chunk factory
       chunkFactory = gameObject.AddComponent<McChunkFactory>();
@@ -98,20 +98,18 @@ public class ChunkDispatcher : MonoBehaviour
                float distance = Vector3Int.Distance(chunkCoord,_playerChunkCoord);
                  if(distance <= maxViewDistance)
                   {
-                     if(!chunks.ContainsKey(chunkCoord))
+                     if(!activeChunks.Contains(chunkCoord))
                      {
-                        Chunk chunk = chunkFactory.ProduceChunk(chunkCoord,chunkMaterial);
-                        if(chunk != null)
-                           chunks.Add(chunkCoord,chunk);
+                        chunkFactory.ProduceChunk(chunkCoord,chunkMaterial);
+                        activeChunks.Add(chunkCoord);
                      }
                   }
                   else
                   {
-                     if(chunks.ContainsKey(chunkCoord))
+                     if(activeChunks.Contains(chunkCoord))
                      {
-                        Chunk chunk = chunks[chunkCoord];
-                        chunk.DestroyChunk();
-                        chunks.Remove(chunkCoord);
+                        chunkFactory.DeleteChunk(chunkCoord);
+                        activeChunks.Remove(chunkCoord);
                      }
                   }
             }

@@ -68,7 +68,7 @@ public class ChunkFactoryDebugger : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-          chunk = mcChunkFactory.ProduceChunk(new Vector3Int(0,0,0),Chunk.LODLevel.Culling);
+         mcChunkFactory.ProduceChunk(new Vector3Int(0,0,0),Chunk.LODLevel.Culling);
          int scale = 4;
          for(int k = 0;k<scale;k++)
          {
