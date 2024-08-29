@@ -20,6 +20,11 @@ public static class ProcedualGeneratorUtility
         }
     }
     
-   
+    public static bool isInSurroundBox(Vector3Int chunkCoord,int[] surroundBox)
+    {
+        return chunkCoord.x <= surroundBox[0] && chunkCoord.x >= surroundBox[1] &&
+               chunkCoord.y <= surroundBox[2] && chunkCoord.y >= surroundBox[3] &&
+               chunkCoord.z <= surroundBox[4] && chunkCoord.z >= surroundBox[5];
+    }
     
 }

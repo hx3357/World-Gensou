@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
 
-public class SDFScalerFieldGenerator : GPUScalerFieldGenerator
+public class SDFIslandScalerFieldGenerator : GPUScalerFieldGenerator
 {
    private readonly int seed;
    private readonly float scale;
@@ -12,15 +12,16 @@ public class SDFScalerFieldGenerator : GPUScalerFieldGenerator
    private Vector3 randomOffset;
    private System.Random prng;
    
+   
    private static readonly int Scale = Shader.PropertyToID("scale");
    private static readonly int IsoLevel = Shader.PropertyToID("isoLevel");
    private static readonly int RandomOffset = Shader.PropertyToID("randomOffset");
-   
-   
    private static readonly int IsConcreteFlagBuffer = Shader.PropertyToID("isConcreteFlagBuffer");
    private static readonly int IsAirFlagBuffer = Shader.PropertyToID("isAirFlagBuffer");
-   
-   public SDFScalerFieldGenerator(ComputeShader m_cs,int m_seed,float m_isoLevel):base(m_cs)
+   private static readonly int IslandPositions = Shader.PropertyToID("islandPositions");
+   private static readonly int IslandCount = Shader.PropertyToID("islandCount");
+
+   public SDFIslandScalerFieldGenerator(ComputeShader m_cs,int m_seed,float m_isoLevel):base(m_cs)
    {
       seed = m_seed;
       isoLevel = m_isoLevel;
@@ -31,12 +32,22 @@ public class SDFScalerFieldGenerator : GPUScalerFieldGenerator
    protected override void InitBuffer()
    {
       base.InitBuffer();
+      //rwbuffer 1 is for isConcreteFlag
+      //rwbuffer 2 is for isAirFlag
+      //rwbuffers 3 is for island positions
       ComputeBuffer isConcreteFlagBuffer = new ComputeBuffer(1, sizeof(int));
       isConcreteFlagBuffer.SetData(new []{1});
       buffers.Add(isConcreteFlagBuffer);
       ComputeBuffer isAirFlagBuffer = new ComputeBuffer(1, sizeof(int));
       isAirFlagBuffer.SetData(new[]{1});
       buffers.Add(isAirFlagBuffer);
+      if(parameters is { Length: > 0 })
+      {
+         ComputeBuffer islandPositionBuffer = new ComputeBuffer(parameters.Length, sizeof(float) * 3);
+         Vector3[] _parameters = Array.ConvertAll(parameters, item => (Vector3)item);
+         islandPositionBuffer.SetData(_parameters);
+         buffers.Add(islandPositionBuffer);
+      }
    }
 
    protected override void GenerateRequest(ScalerFieldRequestData scalerFieldRequestData)
@@ -54,8 +65,11 @@ public class SDFScalerFieldGenerator : GPUScalerFieldGenerator
    {
       m_cs.SetFloat(IsoLevel, isoLevel);
       m_cs.SetVector(RandomOffset, randomOffset);
-      cs.SetBuffer(0, IsConcreteFlagBuffer, scalerFieldRequestData.buffers[1]);
-      cs.SetBuffer(0, IsAirFlagBuffer, scalerFieldRequestData.buffers[2]);
+      m_cs.SetInt(IslandCount, parameters.Length);
+      m_cs.SetBuffer(0, IsConcreteFlagBuffer, scalerFieldRequestData.buffers[1]);
+      m_cs.SetBuffer(0, IsAirFlagBuffer, scalerFieldRequestData.buffers[2]);
+      if(parameters is { Length: > 0 })
+         m_cs.SetBuffer(0, IslandPositions, scalerFieldRequestData.buffers[3]);
    }
 
    public override bool GetState (ScalerFieldRequestData scalerFieldRequestData)

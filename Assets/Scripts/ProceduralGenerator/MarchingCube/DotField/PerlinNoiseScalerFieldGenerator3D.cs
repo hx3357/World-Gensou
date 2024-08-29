@@ -10,14 +10,22 @@ public class PerlinNoiseScalerFieldGenerator3D : IScalerFieldGenerator
     
     private bool isEmptyFlag = false;
     private Vector4[] dotField;
+
+    private PerlinNoise3D prng;
     
     public PerlinNoiseScalerFieldGenerator3D(int m_seed,float m_scale,float m_isoLevel)
     {
         seed = m_seed;
-        PerlinNoise3D.SetRandomSeed(seed);
+        prng = new PerlinNoise3D();
+        prng.SetRandomSeed(seed);
         
         scale = m_scale;
         isoLevel = m_isoLevel;
+    }
+    
+    public void SetParameters(params object[] parameters)
+    {
+        
     }
     
     public ScalerFieldRequestData StartGenerateDotField(Vector3 origin, Vector3Int dotfieldSize, Vector3 m_cellsize)
@@ -29,7 +37,7 @@ public class PerlinNoiseScalerFieldGenerator3D : IScalerFieldGenerator
                 for(int z=0;z<dotfieldSize.z;z++)
                 {
                     Vector3 position = new Vector3(x*m_cellsize.x,y*m_cellsize.y,z*m_cellsize.z);
-                    float value = PerlinNoise3D.Get3DPerlin((origin+position)/scale);
+                    float value = prng.Get3DPerlin((origin+position)/scale);
                     dotField[x + y * dotfieldSize.x + z * dotfieldSize.x * dotfieldSize.y] = new Vector4(position.x,position.y,position.z,value);
                     if(value>isoLevel)
                         isConcreteFlag = false;

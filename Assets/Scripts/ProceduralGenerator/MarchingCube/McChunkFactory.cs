@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -39,6 +40,8 @@ public class McChunkFactory: MonoBehaviour, IChunkFactory
     private IScalerFieldGenerator scalerFieldGenerator;
     
     private float downSampleRate;
+    
+    private Material defaultChunkMaterial;
     
     
     private static readonly int Size = Shader.PropertyToID("size");
@@ -236,21 +239,60 @@ public class McChunkFactory: MonoBehaviour, IChunkFactory
         ComputeBuffer.CopyCount(triangleBuffer,triangleCountBuffer,0);
         AsyncGPUReadbackRequest tribufferRequest = AsyncGPUReadback.Request(triangleBuffer);
         AsyncGPUReadbackRequest tribuffercountRequest = AsyncGPUReadback.Request(triangleCountBuffer,  sizeof(int),0);
+        // int[] count = new int[1];
+        // while (!tribufferRequest.done||!tribuffercountRequest.done)
+        // {
+        //     if(tribufferRequest.hasError||tribuffercountRequest.hasError)
+        //     {
+        //         Debug.LogError("GPU Readback Error");
+        //     }
+        //     yield return null;
+        // }
+        // tribuffercountRequest.GetData<int>().CopyTo(count);
+        // int triangleCount = count[0];
+        // Triangle[] _triangles = new Triangle[triangleCount]; 
+        // tribufferRequest.GetData<Triangle>().Slice(0,triangleCount).CopyTo(_triangles);
+        int[] count = new int[1];
+        NativeArray<Triangle> rawTriangles = new();
+        bool isRawTriangleReady = false,isCountReady = false;
         while (!tribufferRequest.done||!tribuffercountRequest.done)
         {
             if(tribufferRequest.hasError||tribuffercountRequest.hasError)
             {
                 Debug.LogError("GPU Readback Error");
             }
+
+            if (tribufferRequest.done)
+            {
+                rawTriangles = tribufferRequest.GetData<Triangle>();
+                isRawTriangleReady = true;
+            }
+            
+            if(tribuffercountRequest.done)
+            {
+                tribuffercountRequest.GetData<int>().CopyTo(count);
+                isCountReady = true;
+            }
+            
+            if(tribuffercountRequest.done&&tribufferRequest.done)
+                break;
+            
             yield return null;
         }
-        int[] count = new int[1];
-        tribuffercountRequest.GetData<int>().CopyTo(count);
+        
+        if (!isCountReady)
+        {
+            tribuffercountRequest.GetData<int>().CopyTo(count);
+        }
+        
+        if (!isRawTriangleReady)
+        {
+            rawTriangles = tribufferRequest.GetData<Triangle>();
+        }
+        
         int triangleCount = count[0];
         Triangle[] _triangles = new Triangle[triangleCount]; 
-        NativeArray<Triangle> rawTriangles = tribufferRequest.GetData<Triangle>();
         rawTriangles.Slice(0,triangleCount).CopyTo(_triangles);
-        rawTriangles.Dispose();
         
         pointBuffer.Release();
         triangleBuffer.Release();
@@ -286,19 +328,23 @@ public class McChunkFactory: MonoBehaviour, IChunkFactory
         //Create Chunk GameObject
         GameObject chunkObject = new GameObject("Chunk");
         Chunk chunk = chunkObject.AddComponent<Chunk>();
-        chunk.HideMesh();
-        chunkMaterial = m_chunkMaterial!=null ? m_chunkMaterial : new Material(Shader.Find("Universal Render Pipeline/Lit"));
+        chunkMaterial = m_chunkMaterial!=null ? m_chunkMaterial :defaultChunkMaterial;
         chunkObject.transform.position = m_origin;
-        chunk.SetVolume(origin,chunkSize,cellSize);
+        chunk.SetVolume(_origin,_chunkSize,_cellSize);
         chunk.SetMesh(chunkMesh);
         chunk.SetMaterial(chunkMaterial);
-        chunk.SetMesh(chunkMesh);
-        chunk.ShowMesh();
         chunkDict.Add(m_origin,chunk);
         
         currentProducingChunkSet.Remove(_origin);
     }
-    
+
+    private void Awake()
+    {
+        defaultChunkMaterial = new Material(Shader.Find("Universal Render Pipeline/Lit"))
+        {
+            color = Color.white
+        };
+    }
 
     #endregion
 
@@ -309,6 +355,12 @@ public class McChunkFactory: MonoBehaviour, IChunkFactory
     {
         if(currentProducingChunkSet.Contains(m_origin)||chunkDict.ContainsKey(m_origin))
             return;
+        if(Chunk.zombieChunkDict.TryGetValue(m_origin, out var chunk))
+        {
+            chunk.EnableChunk();
+            chunkDict.Add(m_origin,chunk);
+            return;
+        }
         origin = m_origin;
         chunkSize =m_chunkSize;
         cellSize = m_cellSize;
@@ -322,7 +374,7 @@ public class McChunkFactory: MonoBehaviour, IChunkFactory
         if(chunkDict.ContainsKey(m_origin))
         {
             Chunk chunk = chunkDict[m_origin];
-            chunk.DestroyChunk();
+            chunk.ClearChunk();
             chunkDict.Remove(m_origin);
         }
     }
@@ -333,7 +385,7 @@ public class McChunkFactory: MonoBehaviour, IChunkFactory
         if(chunkDict.ContainsKey(m_origin))
         {
             Chunk chunk = chunkDict[m_origin];
-            chunk.DestroyChunk();
+            chunk.ClearChunk();
             chunkDict.Remove(m_origin);
         }
     }

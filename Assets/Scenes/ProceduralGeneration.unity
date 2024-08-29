@@ -1030,7 +1030,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   playerTransform: {fileID: 614957189}
-  maxViewDistance: 5
+  maxViewDistance: 10
   chunkSize: 31
   cellSize: 4
   chunkMaterial: {fileID: 2100000, guid: 8908da3cb4f92e448a332896de150c86, type: 2}
@@ -1072,6 +1072,7 @@ MonoBehaviour:
   marchingCubeCS: {fileID: 7200000, guid: 4bba0040eb28b7a41b5ca143899498f6, type: 3}
   downSampleCS: {fileID: 7200000, guid: 5713efbca54cca3499c852a51d6bb888, type: 3}
   perlinNoise3DCS: {fileID: 7200000, guid: 838f0016716b31f4e835006efbcf2e48, type: 3}
+  sdfCS: {fileID: 7200000, guid: 9c74319d6991ccf4bbfa08cb142e6da2, type: 3}
 --- !u!4 &2138166798
 Transform:
   m_ObjectHideFlags: 0

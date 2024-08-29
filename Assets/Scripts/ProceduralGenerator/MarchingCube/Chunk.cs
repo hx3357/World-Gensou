@@ -6,6 +6,12 @@ using UnityEngine.Serialization;
 
 public class Chunk : MonoBehaviour
 {
+    public readonly static float ChunkDestroyTime = 5;
+    public static Dictionary<Vector3,Chunk> zombieChunkDict = new Dictionary<Vector3, Chunk>();
+    
+    private bool isZombie = false;
+    private float zombieTimer = 0;
+    
     public Vector3 origin;
     public Vector3 center;
     public Vector3Int chunkSize;
@@ -13,6 +19,8 @@ public class Chunk : MonoBehaviour
     public Vector3Int chunkCoord;
     public Vector4[] dotField;
     public Vector3Int dotFieldSize;
+    
+    
     
     /// <summary>
     /// If a chunk is static, chunk exclusive computation will be executed constantly
@@ -139,9 +147,19 @@ public class Chunk : MonoBehaviour
             meshRenderer.enabled = true;
     }
 
-    public void DestroyChunk()
+    public void ClearChunk()
     {
-        Destroy(gameObject);
+        isZombie = true;
+        zombieChunkDict[origin] = this;
+        HideMesh();
+    }
+    
+    public void EnableChunk()
+    {
+        isZombie = false;
+        zombieTimer = 0;
+        zombieChunkDict.Remove(origin);
+        ShowMesh();
     }
     
     public void SetLODLevel(LODLevel level)
@@ -165,6 +183,15 @@ public class Chunk : MonoBehaviour
         }
     }
     
+    void DestoryChunk()
+    {
+        if(zombieChunkDict.TryGetValue(origin,out Chunk chunk))
+        {
+            zombieChunkDict.Remove(origin);
+        }
+        Destroy(gameObject);
+    }
+    
     
     private void Awake()
     {
@@ -180,6 +207,15 @@ public class Chunk : MonoBehaviour
     {
         if(showMeshNormal)
             ShowMeshNormal();
+
+        if (isZombie)
+        {
+            zombieTimer += Time.deltaTime;
+            if (zombieTimer >= ChunkDestroyTime)
+            {
+                DestoryChunk();
+            }
+        }
     }
 
     private void OnDrawGizmos()

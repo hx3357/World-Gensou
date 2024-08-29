@@ -4,26 +4,25 @@ using UnityEngine;
 using System;
 using Random = System.Random;
 
-public static class PerlinNoise3D 
+public class PerlinNoise3D 
 {
     static int seed;
     static Random prng;
     static Vector2 randomOffset;
     
-    static PerlinNoise3D()
+    public PerlinNoise3D()
     {
         prng = new Random(seed);
     }
     
-    public static void SetRandomSeed(int m_seed)
+    public void SetRandomSeed(int m_seed)
     {
         seed = m_seed;
         randomOffset = new Vector2(prng.Next(-100000, 100000), prng.Next(-100000, 100000));
     }
     
-    public static float Get3DPerlin(Vector3 position)
-    { 
-        
+    public float Get3DPerlin(Vector3 position)
+    {                                                          
        float x = position.x;
        float y = position.y + 1;
        float z = position.z + 2;
@@ -36,7 +35,7 @@ public static class PerlinNoise3D
        return xy * xz * yz * yx * zx * zy;
     }
     
-    private static float _perlin3DFixed(float a, float b)
+    private float _perlin3DFixed(float a, float b)
     {
         return Mathf.Sin(Mathf.PI * Mathf.PerlinNoise(a+randomOffset.x, b+randomOffset.y));
     }

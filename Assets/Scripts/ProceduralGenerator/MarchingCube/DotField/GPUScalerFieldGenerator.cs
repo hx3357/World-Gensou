@@ -27,6 +27,8 @@ public class GPUScalerFieldGenerator : IScalerFieldGenerator
     
     private AsyncGPUReadbackRequest request;
     protected List<AsyncGPUReadbackRequest> requests = new List<AsyncGPUReadbackRequest>();
+    
+    protected object[] parameters;
 
     protected GPUScalerFieldGenerator(ComputeShader m_cs)
     {
@@ -72,6 +74,11 @@ public class GPUScalerFieldGenerator : IScalerFieldGenerator
     protected virtual bool GetEmptyState(ScalerFieldRequestData scalerFieldRequestData)
     {
         return false;
+    }
+
+    public virtual void SetParameters(object[] m_parameters)
+    {
+        parameters = m_parameters;
     }
 
     public virtual ScalerFieldRequestData StartGenerateDotField(Vector3 m_origin,Vector3Int m_dotfieldSize, Vector3 m_cellsize)

@@ -34,18 +34,20 @@ public class ChunkDispatcher : MonoBehaviour
    public ComputeShader marchingCubeCS;
    public ComputeShader downSampleCS;
    public ComputeShader perlinNoise3DCS;
+   public ComputeShader sdfCS;
    
    private Vector3Int playerChunkCoord,lastPlayerChunkCoord;
    
-   private IChunkFactory chunkFactory;
-   private IScalerFieldGenerator scalerFieldGenerator;
-   private IScalerFieldDownSampler downSampler;
-   
    private HashSet<Vector3Int> activeChunks = new HashSet<Vector3Int>();
+   
+   private List<ChunkGroup> chunkGroups = new List<ChunkGroup>();
    
    private void Start()
    {
       Initialize();
+      
+      PerlinNoise3D perlinNoise3D = new PerlinNoise3D();
+      perlinNoise3D.SetRandomSeed(seed);
    }
 
    private void Update()
@@ -54,8 +56,16 @@ public class ChunkDispatcher : MonoBehaviour
       playerChunkCoord = Chunk.GetChunkCoordByPosition(playerPosition);
       if(playerChunkCoord != lastPlayerChunkCoord)
       {
-         UpdateChunks();
+         UpdateAllChunkGroups(playerPosition);
          lastPlayerChunkCoord = playerChunkCoord;
+      }
+   }
+
+   void UpdateAllChunkGroups(Vector3 playerPosition)
+   {
+      foreach (var chunkGroup in chunkGroups)
+      {
+         chunkGroup.UpdateChunks(playerPosition);
       }
    }
 
@@ -64,55 +74,43 @@ public class ChunkDispatcher : MonoBehaviour
       Chunk.SetUniversalChunkSize(chunkSize * Vector3Int.one,cellSize *Vector3.one);
       
       //Set up the down sampler
-      downSampler = new GPUTrilinearScalerFieldDownSampler(downSampleCS);
+      IScalerFieldDownSampler downSampler = new GPUTrilinearScalerFieldDownSampler(downSampleCS);
          
       //Set up the scaler field generator
       
-      // scalerFieldGenerator = new PerlinNoiseScalerFieldGenerator2D
-      //    (ocatves, scale, persistance, lacunarity, seed,maxHeight,heightMapping,heightOffset,heightScale);
+      IScalerFieldGenerator perlinNoiseScalerFieldGenerator = new PerlinNoiseScalerFieldGenerator2D
+         (ocatves, scale, persistance, lacunarity, seed,maxHeight,heightMapping,heightOffset,heightScale);
       
       //scalerFieldGenerator = new PerlinNoiseScalerFieldGenerator3D(seed,scale,isoSurface);
       
-      scalerFieldGenerator = new PerlinNoiseScalerFieldGenerator3D_GPU(perlinNoise3DCS,seed,scale,isoSurface);
+      //scalerFieldGenerator = new PerlinNoiseScalerFieldGenerator3D_GPU(perlinNoise3DCS,seed,scale,isoSurface);
+
+      IScalerFieldGenerator sdfIslandScalerFieldGenerator = new SDFIslandScalerFieldGenerator(sdfCS, seed, isoSurface);
       
       //Set up the chunk factory
-      chunkFactory = gameObject.AddComponent<McChunkFactory>();
-      chunkFactory.SetParameters(scalerFieldGenerator,downSampleRate,downSampleCS);
-      if(chunkFactory is McChunkFactory value)
-         value.SetExclusiveParameters(marchingCubeCS,isoSurface,lerpParam);
+      IChunkFactory chunkFactory0 = gameObject.AddComponent<McChunkFactory>();
+      chunkFactory0.SetParameters(sdfIslandScalerFieldGenerator,downSampleRate,downSampleCS);
+      if(chunkFactory0 is McChunkFactory value0)
+         value0.SetExclusiveParameters(marchingCubeCS,isoSurface,lerpParam);
+      
+      IChunkFactory chunkFactory1 = gameObject.AddComponent<McChunkFactory>();
+      chunkFactory1.SetParameters(perlinNoiseScalerFieldGenerator,downSampleRate,downSampleCS);
+      if(chunkFactory1 is McChunkFactory value1)
+         value1.SetExclusiveParameters(marchingCubeCS,isoSurface,lerpParam);
+
+      ChunkGroup chunkGroup0, chunkGroup1;
+      
+      chunkGroup0 = gameObject.AddComponent<SDFIslandGroup>();
+      chunkGroup0.Initialize(sdfIslandScalerFieldGenerator,chunkFactory0,maxViewDistance,chunkMaterial,
+         new []{int.MaxValue,int.MinValue,int.MaxValue,1,int.MaxValue,int.MinValue},seed,3);
+      
+      chunkGroup1 = gameObject.AddComponent<ChunkGroup>();
+      chunkGroup1.Initialize(perlinNoiseScalerFieldGenerator,chunkFactory1,maxViewDistance,chunkMaterial,
+         new []{int.MaxValue,int.MinValue,1,0,int.MaxValue,int.MinValue},seed);
+      chunkGroups.Add(chunkGroup0);
+      chunkGroups.Add(chunkGroup1);
    }
    
-   void UpdateChunks()
-   {
-      Vector3 playerPosition = playerTransform.position;
 
-      Vector3Int _playerChunkCoord = Chunk.GetChunkCoordByPosition(playerPosition);
-      
-      int celledMaxViewDistance = Mathf.CeilToInt(maxViewDistance)+1;
-      
-      for(int x = -celledMaxViewDistance;x<=celledMaxViewDistance;x++)
-         for(int y = -celledMaxViewDistance;y<=celledMaxViewDistance;y++)
-            for(int z = -celledMaxViewDistance;z<=celledMaxViewDistance;z++)
-            {
-               Vector3Int chunkCoord = _playerChunkCoord + new Vector3Int(x,y,z);
-               float distance = Vector3Int.Distance(chunkCoord,_playerChunkCoord);
-                 if(distance <= maxViewDistance)
-                  {
-                     if(!activeChunks.Contains(chunkCoord))
-                     {
-                        chunkFactory.ProduceChunk(chunkCoord,chunkMaterial);
-                        activeChunks.Add(chunkCoord);
-                     }
-                  }
-                  else
-                  {
-                     if(activeChunks.Contains(chunkCoord))
-                     {
-                        chunkFactory.DeleteChunk(chunkCoord);
-                        activeChunks.Remove(chunkCoord);
-                     }
-                  }
-            }
-   }
 }
 

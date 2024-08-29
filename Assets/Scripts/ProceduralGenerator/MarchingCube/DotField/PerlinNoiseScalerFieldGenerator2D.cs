@@ -80,6 +80,11 @@ public sealed class PerlinNoiseScalerFieldGenerator2D : IScalerFieldGenerator
         }
         return noiseMap;
     }
+    
+    public void SetParameters(params object[] parameters)
+    {
+        
+    }
 
     public ScalerFieldRequestData StartGenerateDotField(Vector3 origin, Vector3Int dotfieldSize, Vector3 m_cellsize)
     {

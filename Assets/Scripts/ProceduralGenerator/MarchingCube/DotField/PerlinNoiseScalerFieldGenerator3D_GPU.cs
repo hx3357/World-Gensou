@@ -55,8 +55,8 @@ public class PerlinNoiseScalerFieldGenerator3D_GPU : GPUScalerFieldGenerator
       m_cs.SetFloat(Scale, scale);
       m_cs.SetFloat(IsoLevel, isoLevel);
       m_cs.SetVector(RandomOffset, randomOffset);
-      cs.SetBuffer(0, IsConcreteFlagBuffer, scalerFieldRequestData.buffers[1]);
-      cs.SetBuffer(0, IsAirFlagBuffer, scalerFieldRequestData.buffers[2]);
+      m_cs.SetBuffer(0, IsConcreteFlagBuffer, scalerFieldRequestData.buffers[1]);
+      m_cs.SetBuffer(0, IsAirFlagBuffer, scalerFieldRequestData.buffers[2]);
    }
 
    public override bool GetState (ScalerFieldRequestData scalerFieldRequestData)
