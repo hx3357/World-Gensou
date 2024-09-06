@@ -48,14 +48,19 @@ public class PerlinNoiseScalerFieldGenerator3D : IScalerFieldGenerator
         return new ScalerFieldRequestData();
     }
     
-    public bool GetState(ScalerFieldRequestData scalerFieldRequestData)
+    public (bool,Vector4[],bool) GetState(ref ScalerFieldRequestData scalerFieldRequestData)
     {
-        return true;
+        return (true,GetDotField(scalerFieldRequestData, out bool isEmpty),isEmpty);
     }
     
-    public Vector4[] GetDotField(ScalerFieldRequestData scalerFieldRequestData, out bool isEmptyFlag)
+    private Vector4[] GetDotField(ScalerFieldRequestData scalerFieldRequestData, out bool isEmptyFlag)
     {
         isEmptyFlag = this.isEmptyFlag;
         return dotField;
+    }
+    
+    public void Release(ScalerFieldRequestData scalerFieldRequestData)
+    {
+        dotField = null;
     }
 }

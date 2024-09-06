@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
+using Object = System.Object;
 
 public class SDFIslandScalerFieldGenerator : GPUScalerFieldGenerator
 {
@@ -43,8 +44,8 @@ public class SDFIslandScalerFieldGenerator : GPUScalerFieldGenerator
       buffers.Add(isAirFlagBuffer);
       if(parameters is { Length: > 0 })
       {
-         ComputeBuffer islandPositionBuffer = new ComputeBuffer(parameters.Length, sizeof(float) * 3);
-         Vector3[] _parameters = Array.ConvertAll(parameters, item => (Vector3)item);
+         ComputeBuffer islandPositionBuffer = new ComputeBuffer(parameters.Length, sizeof(float) * 4);
+         Vector4[] _parameters = Array.ConvertAll(parameters, item => (Vector4)item);
          islandPositionBuffer.SetData(_parameters);
          buffers.Add(islandPositionBuffer);
       }
@@ -72,23 +73,40 @@ public class SDFIslandScalerFieldGenerator : GPUScalerFieldGenerator
          m_cs.SetBuffer(0, IslandPositions, scalerFieldRequestData.buffers[3]);
    }
 
-   public override bool GetState (ScalerFieldRequestData scalerFieldRequestData)
+   public override (bool,Vector4[],bool) GetState (ref ScalerFieldRequestData scalerFieldRequestData)
    {
+      AsyncGPUReadbackRequest dotFieldRequest = scalerFieldRequestData.requests[0];
       AsyncGPUReadbackRequest isConcreteFlagBufferRequest =scalerFieldRequestData.requests[1];
       AsyncGPUReadbackRequest isAirFlagBufferRequest = scalerFieldRequestData.requests[2];
-      if (!isConcreteFlagBufferRequest.done || !isAirFlagBufferRequest.done)
-         return false;
-      return base.GetState(scalerFieldRequestData);
+      Vector4[] dotField = null;
+      scalerFieldRequestData.extraParameters ??= new(new Object[2]);
+      scalerFieldRequestData.isDoneFlags ??= new bool[3];
+      if (isConcreteFlagBufferRequest.done&&!scalerFieldRequestData.isDoneFlags[0])
+      {
+         int[] isConcreteFlag = new int[1];
+         isConcreteFlagBufferRequest.GetData<int>().CopyTo(isConcreteFlag);
+         scalerFieldRequestData.extraParameters[0] = isConcreteFlag[0];
+         scalerFieldRequestData.isDoneFlags[0] = true;
+      }
+      if(isAirFlagBufferRequest.done&&!scalerFieldRequestData.isDoneFlags[1])
+      {
+         int[] isAirFlag = new int[1];
+         isAirFlagBufferRequest.GetData<int>().CopyTo(isAirFlag);
+         scalerFieldRequestData.extraParameters[1] = isAirFlag[0];
+         scalerFieldRequestData.isDoneFlags[1] = true;
+      }
+      if(dotFieldRequest.done&&!scalerFieldRequestData.isDoneFlags[2])
+      {
+         dotField = dotFieldRequest.GetData<Vector4>().ToArray();
+         scalerFieldRequestData.isDoneFlags[2] = true;
+      }
+      bool isDone = isConcreteFlagBufferRequest.done && isAirFlagBufferRequest.done && dotFieldRequest.done;
+      return (isDone, dotField, isDone && GetEmptyState(scalerFieldRequestData));
    }
 
    protected override bool GetEmptyState(ScalerFieldRequestData scalerFieldRequestData)
    {
-      AsyncGPUReadbackRequest isConcreteFlagBufferRequest =scalerFieldRequestData.requests[1];
-      AsyncGPUReadbackRequest isAirFlagBufferRequest = scalerFieldRequestData.requests[2];
-      int[] isConcreteFlag = new int[1];
-      isConcreteFlagBufferRequest.GetData<int>().CopyTo(isConcreteFlag);
-      int[] isAirFlag = new int[1];
-      isAirFlagBufferRequest.GetData<int>().CopyTo(isAirFlag);
-      return isConcreteFlag[0] == 1 || isAirFlag[0] == 1;
+      return (int)scalerFieldRequestData.extraParameters[0] == 1 || 
+             (int)scalerFieldRequestData.extraParameters[1] == 1;
    }
 }

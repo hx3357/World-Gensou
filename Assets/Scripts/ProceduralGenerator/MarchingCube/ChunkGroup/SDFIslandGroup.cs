@@ -1,18 +1,22 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using Unity.VisualScripting;
 using UnityEngine;
+using Random = UnityEngine.Random;
 
 public class SDFIslandGroup : ChunkGroup
 {
     private int islandMaxRadius;
+    private float islandEmptiness;
     private HashSet<Vector3Int> islandCenters = new HashSet<Vector3Int>();
     
     public override void Initialize(IScalerFieldGenerator m_scalerFieldGenerator, IChunkFactory m_chunkFactory,
         float m_maxViewDistance, Material m_chunkMaterial, int[] m_surroundBox, int m_seed, params object[] parameters)
     {
         islandMaxRadius = (int)parameters[0];
+        islandEmptiness = (float)parameters[1];
         base.Initialize(m_scalerFieldGenerator, m_chunkFactory, m_maxViewDistance, m_chunkMaterial, m_surroundBox,
             m_seed, parameters);
     }
@@ -50,7 +54,7 @@ public class SDFIslandGroup : ChunkGroup
             if(distance <= maxViewDistance&&
                ProcedualGeneratorUtility.isInSurroundBox(chunkCoord,surroundBox))
             {
-                if(perlinNoise3D.Get3DPerlin(Chunk.GetChunkCenterByCoord(chunkCoord)*0.1f)>0.95f)
+                if(perlinNoise3D.Get3DPerlin(Chunk.GetChunkCenterByCoord(chunkCoord) * (0.01f*islandEmptiness))>1-(1/islandEmptiness))
                 {
                     islandCenters.Add(chunkCoord);
                     newIslandCenters.Add(chunkCoord);
@@ -66,12 +70,15 @@ public class SDFIslandGroup : ChunkGroup
             }
         }
         
+        Debug.Log($"new Island Centers: {newIslandCenters.Count}");
+        
         //Update the scalar field generator parameters
-        scalerFieldParameters = new object[newIslandCenters.Count];
-        for(int i = 0;i<newIslandCenters.Count;i++)
+        scalerFieldParameters = new object[islandCenters.Count];
+        int i = 0;
+        foreach (var chunkOrigin in islandCenters.Select(Chunk.GetChunkCenterByCoord))
         {
-            Vector3 chunkOrigin = Chunk.GetChunkCenterByCoord(newIslandCenters[i]);
-            scalerFieldParameters[i] = chunkOrigin;
+            scalerFieldParameters[i++] = new Vector4(chunkOrigin.x,chunkOrigin.y,chunkOrigin.z,
+                0);
         }
         PrepareScalarFieldGeneratorParameters();
         
@@ -83,9 +90,11 @@ public class SDFIslandGroup : ChunkGroup
             for(int y = -islandMaxRadius;y<= islandMaxRadius;y++)
             for (int z = -islandMaxRadius; z <= islandMaxRadius; z++)
             {
+                
                 Vector3Int islandChunkCoord = chunkCoord + new Vector3Int(x, y, z);
                 if(activeChunks.Contains(islandChunkCoord)) continue;
-                chunkFactory.ProduceChunk(islandChunkCoord,chunkMaterial);
+                Debug.Log($"Produce Chunk");
+                chunkFactory.ProduceChunk(islandChunkCoord,chunkMaterial,m_isForceUpdate:true);
                 activeChunks.Add(islandChunkCoord);
             }
         }
@@ -102,6 +111,15 @@ public class SDFIslandGroup : ChunkGroup
                 chunkFactory.DeleteChunk(islandChunkCoord);
                 activeChunks.Remove(islandChunkCoord);
             }
+        }
+    }
+    
+    void OnDrawGizmos()
+    {
+        Gizmos.color = Color.red;
+        foreach (var islandCenter in islandCenters)
+        {
+            Gizmos.DrawSphere(Chunk.GetChunkCenterByCoord(islandCenter),10);
         }
     }
 }

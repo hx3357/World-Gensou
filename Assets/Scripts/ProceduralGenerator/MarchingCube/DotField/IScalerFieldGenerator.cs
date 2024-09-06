@@ -19,9 +19,8 @@ public interface IScalerFieldGenerator
     /// <param name="parameters"></param>
     public void SetParameters(object[] parameters);
     
-    public bool GetState(ScalerFieldRequestData scalerFieldRequestData);
+    public (bool,Vector4[],bool) GetState(ref ScalerFieldRequestData scalerFieldRequestData);
     
-    public Vector4[] GetDotField(ScalerFieldRequestData scalerFieldRequestData, out bool isEmptyFlag);
-    
+    public void Release(ScalerFieldRequestData scalerFieldRequestData);
     
 }

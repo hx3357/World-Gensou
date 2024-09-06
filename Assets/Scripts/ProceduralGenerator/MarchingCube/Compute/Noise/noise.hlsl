@@ -72,3 +72,4 @@ float PeriodicNoise(float3 p, float3 rep)
     float3 f = frac(p);
     return ClassicNoise_impl(i0, f, i1, f - 1);
 }
+

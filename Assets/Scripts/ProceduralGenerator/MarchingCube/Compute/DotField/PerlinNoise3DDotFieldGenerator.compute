@@ -1,7 +1,7 @@
 // Each #kernel tells which function to compile; you can have many kernels
 #pragma kernel CSMain
 
-#include "../Noise/noise3D.hlsl"
+#include "..\Noise\noise.hlsl"
 #include "../Includes/Utility.hlsl"
 
 int3 dotFieldSize;

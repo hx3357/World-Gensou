@@ -10,11 +10,9 @@ public interface IChunkFactory
     public static Vector3 universalCellSize;
     
     public void ProduceChunk(Vector3 m_origin, Vector3Int m_chunkSize, Vector3 m_cellSize,
-        Material m_chunkMaterial = null);
+        Material m_chunkMaterial = null, bool m_isForceUpdate = false);
     
-    public void ProduceChunk(Vector3 m_origin, Material m_chunkMaterial = null);
-    
-    public void ProduceChunk(Vector3Int chunkCoord, Material m_chunkMaterial = null);
+    public void ProduceChunk(Vector3Int chunkCoord, Material m_chunkMaterial = null, bool m_isForceUpdate = false);
     
     /// <summary>
     /// Produce chunk with LOD level
@@ -23,7 +21,7 @@ public interface IChunkFactory
     /// <param name="lodLevel">Target LOD level</param>
     /// <param name="m_chunkMaterial">Chunk Material</param>
     /// <returns></returns>
-    public void ProduceChunk(Vector3Int chunkCoord,Chunk.LODLevel lodLevel, Material m_chunkMaterial = null);
+    public void ProduceChunk(Vector3Int chunkCoord,Chunk.LODLevel lodLevel, Material m_chunkMaterial = null, bool m_isForceUpdate = false);
     
     public void DeleteChunk(Vector3 m_origin);
 

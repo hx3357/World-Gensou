@@ -59,13 +59,17 @@ public class PerlinNoiseScalerFieldGenerator3D_GPU : GPUScalerFieldGenerator
       m_cs.SetBuffer(0, IsAirFlagBuffer, scalerFieldRequestData.buffers[2]);
    }
 
-   public override bool GetState (ScalerFieldRequestData scalerFieldRequestData)
+   public override (bool,Vector4[],bool) GetState (ref ScalerFieldRequestData scalerFieldRequestData)
    {
       AsyncGPUReadbackRequest isConcreteFlagBufferRequest =scalerFieldRequestData.requests[1];
       AsyncGPUReadbackRequest isAirFlagBufferRequest = scalerFieldRequestData.requests[2];
       if (!isConcreteFlagBufferRequest.done || !isAirFlagBufferRequest.done)
-         return false;
-      return base.GetState(scalerFieldRequestData);
+         return (false,null,false);
+      else
+      {
+         
+      }
+      return base.GetState(ref scalerFieldRequestData);
    }
 
    protected override bool GetEmptyState(ScalerFieldRequestData scalerFieldRequestData)

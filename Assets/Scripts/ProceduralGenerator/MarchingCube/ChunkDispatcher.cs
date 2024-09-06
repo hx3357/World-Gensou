@@ -102,13 +102,14 @@ public class ChunkDispatcher : MonoBehaviour
       
       chunkGroup0 = gameObject.AddComponent<SDFIslandGroup>();
       chunkGroup0.Initialize(sdfIslandScalerFieldGenerator,chunkFactory0,maxViewDistance,chunkMaterial,
-         new []{int.MaxValue,int.MinValue,int.MaxValue,1,int.MaxValue,int.MinValue},seed,3);
+         new []{int.MaxValue,int.MinValue,int.MaxValue,int.MinValue,int.MaxValue,int.MinValue},seed,
+         2,22f);
       
       chunkGroup1 = gameObject.AddComponent<ChunkGroup>();
       chunkGroup1.Initialize(perlinNoiseScalerFieldGenerator,chunkFactory1,maxViewDistance,chunkMaterial,
-         new []{int.MaxValue,int.MinValue,1,0,int.MaxValue,int.MinValue},seed);
+         new []{int.MaxValue,int.MinValue,2,0,int.MaxValue,int.MinValue},seed);
       chunkGroups.Add(chunkGroup0);
-      chunkGroups.Add(chunkGroup1);
+      //chunkGroups.Add(chunkGroup1);
    }
    
 
