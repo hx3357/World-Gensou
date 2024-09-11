@@ -5,7 +5,7 @@ using UnityEngine;
 
 public class ChunkGroup : MonoBehaviour
 {
-   public float maxViewDistance;
+   public int maxViewDistance;
    public Material chunkMaterial;
 
    private int seed;
@@ -19,10 +19,23 @@ public class ChunkGroup : MonoBehaviour
 
    protected PerlinNoise3D perlinNoise3D;
    
-   public virtual void Initialize(IScalerFieldGenerator m_scalerFieldGenerator,IChunkFactory m_chunkFactory,
-      float m_maxViewDistance,Material m_chunkMaterial,int[] m_surroundBox,int m_seed,params object[] parameters)
+   private bool isFirstUpdating;
+   private bool isFirstUpdated;
+   private int firstUpdateFrameInterval = 10;
+   
+   /// <summary>
+   /// 
+   /// </summary>
+   /// <param name="m_chunkFactory"></param>
+   /// <param name="m_maxViewDistance"></param>
+   /// <param name="m_chunkMaterial"></param>
+   /// <param name="m_surroundBox"></param>
+   /// <param name="m_seed"></param>
+   /// <param name="parameters">Parameters for scalar field generator</param>
+   public virtual void Initialize(IChunkFactory m_chunkFactory,
+      int m_maxViewDistance,Material m_chunkMaterial,int[] m_surroundBox,int m_seed,params object[] parameters)
    {
-      scalerFieldGenerator = m_scalerFieldGenerator;
+      scalerFieldGenerator = m_chunkFactory.GetScalerFieldGenerator();
       chunkFactory = m_chunkFactory;
       surroundBox = m_surroundBox is { Length: 6 } ? m_surroundBox : 
          new []{int.MaxValue,int.MinValue,int.MaxValue,int.MinValue,int.MaxValue,int.MinValue};
@@ -43,10 +56,10 @@ public class ChunkGroup : MonoBehaviour
          scalerFieldGenerator.SetParameters(scalerFieldParameters);
    }
    
-   public virtual void UpdateChunks(Vector3 playerPosition)
+   protected virtual void UpdateChunks(Vector3 playerPosition,float m_maxViewDistance)
    {
       Vector3Int _playerChunkCoord = Chunk.GetChunkCoordByPosition(playerPosition);
-      int celledMaxViewDistance = Mathf.CeilToInt(maxViewDistance)+1;
+      int celledMaxViewDistance = Mathf.CeilToInt(m_maxViewDistance)+1;
       List<Vector3Int> preproducedChunks = new List<Vector3Int>();
       
       for(int x = -celledMaxViewDistance;x<= celledMaxViewDistance;x++)
@@ -55,7 +68,7 @@ public class ChunkGroup : MonoBehaviour
             {
                Vector3Int chunkCoord = _playerChunkCoord + new Vector3Int(x,y,z);
                float distance = Vector3Int.Distance(chunkCoord,_playerChunkCoord);
-                 if(distance <= maxViewDistance&&ProcedualGeneratorUtility.isInSurroundBox(chunkCoord,surroundBox))
+                 if(distance <= m_maxViewDistance&&ProcedualGeneratorUtility.isInSurroundBox(chunkCoord,surroundBox))
                   {
                      if(!activeChunks.Contains(chunkCoord))
                      {
@@ -79,5 +92,37 @@ public class ChunkGroup : MonoBehaviour
          chunkFactory.ProduceChunk(chunkCoord,chunkMaterial);
          activeChunks.Add(chunkCoord);
       }
+   }
+   
+   private void FirstUpdate(Vector3 playerPosition)
+   {
+      isFirstUpdating = true;
+      StartCoroutine(FirstUpdateCoroutine(playerPosition));
+   }
+   
+   IEnumerator FirstUpdateCoroutine(Vector3 playerPosition)
+   {
+      
+      for(int viewDistance = 1;viewDistance<=maxViewDistance;viewDistance++)
+      {
+         UpdateChunks(playerPosition,viewDistance);
+         for(int frame = 0;frame<firstUpdateFrameInterval;frame++)
+            yield return null;
+      }
+      
+      isFirstUpdating = false;
+      isFirstUpdated = true;
+     
+   }
+
+   public void UpdateChunkGroup(Vector3 playerPosition)
+   {
+      if(isFirstUpdating)return;
+      if (!isFirstUpdated)
+      {
+         FirstUpdate(playerPosition);
+         return;
+      }
+      UpdateChunks( playerPosition,maxViewDistance);
    }
 }

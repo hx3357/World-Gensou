@@ -58,7 +58,7 @@ public class Chunk : MonoBehaviour
     
     [Header("Debug")]
     public bool showMeshNormal = false;
-    public float normalLength = 0.3f;
+    public float normalLength = 1f;
     
     private Mesh mesh;
     private MeshFilter meshFilter;
@@ -179,7 +179,8 @@ public class Chunk : MonoBehaviour
         Vector3[] normals = mesh.normals;
         for (int i = 0; i < vertices.Length; i++)
         {
-            Debug.DrawLine(vertices[i], vertices[i] + normalLength * normals[i],Color.red);
+            var position = transform.position;
+            Debug.DrawLine(vertices[i]+position, vertices[i] +position+ normalLength * normals[i],Color.red);
         }
     }
     

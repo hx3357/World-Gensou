@@ -22,27 +22,15 @@ public interface IChunkFactory
     /// <param name="m_chunkMaterial">Chunk Material</param>
     /// <returns></returns>
     public void ProduceChunk(Vector3Int chunkCoord,Chunk.LODLevel lodLevel, Material m_chunkMaterial = null, bool m_isForceUpdate = false);
-    
-    public void DeleteChunk(Vector3 m_origin);
 
     public void DeleteChunk(Vector3Int m_coord);
-
-    public void SetChunk(Chunk chunk, Vector3 m_center, Vector3Int m_chunkSize,
-        Vector3 m_cellSize);
-    
-    /// <summary>
-    /// Set chunk with LOD level
-    /// </summary>
-    /// <param name="chunk">The chunk to set</param>
-    /// <param name="lodLevel">Target LOD level</param>
-    public void SetChunk(Chunk chunk,Chunk.LODLevel lodLevel);
-    
-    public void SetChunk(Chunk chunk);
     
     public void SetParameters(IScalerFieldGenerator m_scalerFieldGenerator);
     
     public void SetParameters(IScalerFieldGenerator m_scalerFieldGenerator, 
         float m_downSampleRate, ComputeShader m_downSampleCS);
+    
+    public IScalerFieldGenerator GetScalerFieldGenerator();
 }
 
 

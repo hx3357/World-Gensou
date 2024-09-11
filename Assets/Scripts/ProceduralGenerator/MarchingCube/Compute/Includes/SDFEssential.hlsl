@@ -1,8 +1,9 @@
-#include "..\Noise\noise.hlsl"
 #include "..\Noise\simplexNoise3D.hlsl"
+#include "..\Noise\fractalNoise.hlsl"
 
 #define FLT_MAX 3.402823466e+38
 #define SDF_MAX 100.
+#define PI 3.14159265
 
 //SDF operations
 
@@ -41,8 +42,8 @@ float smoothUnion(float a, float b, float k)
 
 float smoothSubtraction(float a, float b, float k)
 {
-    float h = clamp(0.5 - 0.5 * (b + a) / k, 0.0, 1.0);
-    return lerp(b, -a, h) + k * h * (1.0 - h);
+    float h = clamp(0.5 - 0.5 * (a + b) / k, 0.0, 1.0);
+    return lerp(a, -b, h) + k * h * (1.0 - h);
 }
 
 float smoothIntersection(float a, float b, float k)
@@ -58,7 +59,7 @@ float3 sdfTranslate(float3 position,float3 translation)
 
 float3 sdfRotateAround(float3 position,float3 rotation,float3 center)
 {
-    float3x3 rotateInvertMatrix = float3x3(
+    const float3x3 rotateInvertMatrix = float3x3(
         float3(cos(rotation.y) * cos(rotation.z), cos(rotation.y) * sin(rotation.z), -sin(rotation.y)),
         float3(sin(rotation.x) * sin(rotation.y) * cos(rotation.z) - cos(rotation.x) * sin(rotation.z), sin(rotation.x) * sin(rotation.y) * sin(rotation.z) + cos(rotation.x) * cos(rotation.z), sin(rotation.x) * cos(rotation.y)),
         float3(cos(rotation.x) * sin(rotation.y) * cos(rotation.z) + sin(rotation.x) * sin(rotation.z), cos(rotation.x) * sin(rotation.y) * sin(rotation.z) - sin(rotation.x) * cos(rotation.z), cos(rotation.x) * cos(rotation.y))
@@ -92,67 +93,34 @@ float3 cartesianToSpherical(float3 p)
 
 //Basic SDF functions
 
-float sphereSDF(float3 origin, float radius, float3 position)
+float sphereSDF(float3 position, float3 origin, float radius)
 {
     return length(position - origin) - radius;
 }
 
-float boxSDF(float3 origin, float3 size, float3 position)
+float boxSDF(float3 position, float3 origin, float3 size)
 {
+    size /= 2;
     float3 p = position - origin;
     float3 q = abs(p) - size;
     return length(max(q,0.))+min(max(q.x,max(q.y,q.z)),0.);
 }
 
-float boxSDFBy2Points(float3 p1, float3 p2, float2 faceSize,float3 position)
+float infCylinderSDF(float3 position, float3 origin, float radius)
 {
-    float3 origin = (p1+p2)/2;
-    float y = length(p1-p2);
-    float3 dir =p1-p2;
-    float3 sphericalVec = cartesianToSpherical(dir);
-    float3 rotation = float3(sphericalVec.z,sphericalVec.y,0);
-    float3 _pos = sdfRotateAround(position,rotation,origin);
-    return boxSDF(origin,float3(faceSize.x,y,faceSize.y),_pos);
+    return length(position.xz-origin.xy) - radius;
 }
 
 
 //Island sdf
 float basicAstoroidSDF(float3 origin,float3 position,float radius,float noiseScale,float noiseAmp ,float3 randomOffset)
 {
-    return sphereSDF(origin, radius, position)+
+    return sphereSDF(position, origin, radius)+
        noiseAmp* getPerlinNoiseDisplacement(position, noiseScale,randomOffset);
 }
 
-// float mixedArtifactsSDF(float3 origin,float3 position,float size,float noiseScale,float noiseAmp ,float3 randomOffset)
-// {
-//     float deviation = snoise(origin)*size;
-//     float k = 2;
-//     float3 p[] = {
-//         float3(1,k,1)*deviation,
-//         float3(-1,k,1)*deviation,
-//         float3(1,-k,1)*deviation,
-//         float3(-1,-k,1)*deviation,
-//         float3(1,k,-1)*deviation,
-//         float3(-1,k,-1)*deviation,
-//         float3(1,-k,-1)*deviation,
-//         float3(-1,-k,-1)*deviation
-//     };
-//     k = 1/2;
-//     float3 q[] = {
-//         float3(1,k,1)*deviation,
-//         float3(-1,k,1)*deviation,
-//         float3(1,-k,1)*deviation,
-//         float3(-1,-k,1)*deviation,
-//         float3(1,k,-1)*deviation,
-//         float3(-1,k,-1)*deviation,
-//         float3(1,-k,-1)*deviation,
-//         float3(-1,-k,-1)*deviation
-//     };
-//
-//     for(int i=0;i<8;i++)
-//     {
-//         
-//     }
-//     
-//     return smoothUnion(sphereSDF())
-// }
+float basicPlanetSDF(float3 origin,float3 position,float radius,float noiseScale,float noiseAmp ,float3 randomOffset)
+{
+    return sphereSDF(position, origin, radius)+
+       noiseAmp* fractalNoise(position/noiseScale + randomOffset,4,3,0.5);
+}

@@ -2,7 +2,7 @@
 #pragma kernel CSMain
 
 #include "../Includes/Utility.hlsl"
-#include "..\Includes\SDFEssential.hlsl"
+#include "../Includes/RandomIsland.hlsl"
 
 int3 dotFieldSize;
 float3 origin;
@@ -26,26 +26,23 @@ void CSMain (uint3 id : SV_DispatchThreadID)
     float value=SDF_MAX;
     for (int i=0;i<islandCount;i++)
     {
-        float3 islandPos = islandPositions[i].xyz;
+        const float3 islandPos = islandPositions[i].xyz;
         switch (islandPositions[i].w)
         {
         default:
         case 0:
-            // value = min(value, basicAstoroidSDF(islandPositions[i].xyz,
-            //     float3(id) * cellSize + origin, 100+40*snoise(islandPositions[i].xyz), 30,10, randomOffset));
-            value = min(value, boxSDFBy2Points(islandPos+float3(0,100,0),
-                islandPos, float2(5, 5), pos));
+            value = min(value, randomIslandSDFMode1(pos, islandPos, randomOffset));
             break;
         case 1:
             float3 _pos = sdfRotateAround(pos,
-                float3(snoise(islandPositions[i].xyz),
+                float3(snoise(islandPos),
                     snoise(islandPositions[i].xyz+float3(1,0,0)),
                     snoise(islandPositions[i].xyz+float3(1,0,1))),
                 islandPositions[i].xyz);
-            value = min(value, boxSDF(islandPositions[i].xyz, float3(50, 60, 50), _pos));
+            value = min(value, boxSDF(_pos, islandPos, float3(50, 60, 50)));
             break;
         case 2:
-            value = min(value, basicAstoroidSDF(islandPositions[i].xyz,
+            value = min(value, basicAstoroidSDF(islandPos,
                 float3(id) * cellSize + origin, 60+20*snoise(islandPositions[i].xyz), 20,10, randomOffset));
             break;
         }

@@ -53,6 +53,7 @@ public class ChunkFactoryDebugger : MonoBehaviour
 
     private void Awake()
     {
+        
         instance = this;
         
         Chunk.SetUniversalChunkSize(chunkSize,cellSize*Vector3.one);
@@ -112,7 +113,7 @@ public class ChunkFactoryDebugger : MonoBehaviour
              value.SetExclusiveParameters(marchingCubeCS,isoSurface,lerpParam);
          if(chunk!=null)
          {
-              mcChunkFactory?.SetChunk(chunk,lodLevel);
+             // mcChunkFactory?.SetChunk(chunk,lodLevel);
              // chunk.gameObject.SetActive(false);
              // chunk = mcChunkFactory.ProduceChunk(offset);
          }

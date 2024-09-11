@@ -251,7 +251,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 8908da3cb4f92e448a332896de150c86, type: 2}
+  - {fileID: -876546973899608171, guid: a85b7789928221b43a2f9d47c4d6f823, type: 3}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -290,7 +290,7 @@ Transform:
   m_GameObject: {fileID: 614957185}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -29.7, y: -7.8, z: -11.2}
+  m_LocalPosition: {x: -5.8, y: 0, z: 3.39}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1030,7 +1030,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   playerTransform: {fileID: 614957189}
-  maxViewDistance: 16
+  maxViewDistance: 10
   chunkSize: 31
   cellSize: 4
   chunkMaterial: {fileID: 2100000, guid: 8908da3cb4f92e448a332896de150c86, type: 2}

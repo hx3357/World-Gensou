@@ -262,6 +262,7 @@ public class McChunkFactory: MonoBehaviour, IChunkFactory
     {
         if(currentProducingChunkSet.Contains(m_origin))
         {
+            Debug.Log("Chunk is already producing");
             return;
         }
 
@@ -318,37 +319,6 @@ public class McChunkFactory: MonoBehaviour, IChunkFactory
             IChunkFactory.universalCellSize, m_chunkMaterial, m_isForceUpdate);
     }
     
-    public virtual void SetChunk(Chunk chunk,Vector3 m_center,Vector3Int m_chunkSize,
-        Vector3 m_cellSize)
-    {
-        // StartCoroutine(ProduceChunkCoroutine(chunk));
-        // chunk.SetVolume(origin,chunkSize,cellSize);
-        // chunk.SetMesh(chunkMesh);
-    }
-    
-    /// <summary>
-    /// Change LOD level based on existing dot field data
-    /// </summary>
-    /// <param name="chunk"></param>
-    /// <param name="lodLevel"></param>
-    public virtual void SetChunk(Chunk chunk,Chunk.LODLevel lodLevel)
-    {
-        // if(lodLevel == chunk.lodLevel)
-        //     return;
-        //
-        // chunk.ShowMesh();
-        // SetDownSampler(downSampleCS,Chunk.lodDownSampleRateTable[lodLevel]);
-        // StartCoroutine(ProduceChunkCoroutine(chunk));
-        // chunk.SetLODLevel(lodLevel);
-        // chunk.SetMesh(chunkMesh);
-    }
-    
-    public virtual void SetChunk(Chunk chunk)
-    {
-        // StartCoroutine(ProduceChunkCoroutine(chunk));
-        // chunk.SetVolume(origin,chunkSize,cellSize);
-    }
-    
     public void SetParameters(IScalerFieldGenerator m_scalerFieldGenerator)
     {
         this.scalerFieldGenerator = m_scalerFieldGenerator;
@@ -373,6 +343,11 @@ public class McChunkFactory: MonoBehaviour, IChunkFactory
     {
         downSampleCS = computeShader;
         downSampleRate = m_downSampleRate;
+    }
+    
+    public IScalerFieldGenerator GetScalerFieldGenerator()
+    {
+        return scalerFieldGenerator;
     }
 
     #endregion

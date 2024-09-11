@@ -7,7 +7,7 @@ public class ChunkDispatcher : MonoBehaviour
 {
    public Transform playerTransform;
    
-   public float maxViewDistance = 5;
+   public int maxViewDistance = 5;
    public int chunkSize = 32;
    public float cellSize = 1;
    public Material chunkMaterial;
@@ -65,7 +65,7 @@ public class ChunkDispatcher : MonoBehaviour
    {
       foreach (var chunkGroup in chunkGroups)
       {
-         chunkGroup.UpdateChunks(playerPosition);
+         chunkGroup.UpdateChunkGroup(playerPosition);
       }
    }
 
@@ -101,15 +101,15 @@ public class ChunkDispatcher : MonoBehaviour
       ChunkGroup chunkGroup0, chunkGroup1;
       
       chunkGroup0 = gameObject.AddComponent<SDFIslandGroup>();
-      chunkGroup0.Initialize(sdfIslandScalerFieldGenerator,chunkFactory0,maxViewDistance,chunkMaterial,
+      chunkGroup0.Initialize(chunkFactory0,maxViewDistance,chunkMaterial,
          new []{int.MaxValue,int.MinValue,int.MaxValue,int.MinValue,int.MaxValue,int.MinValue},seed,
          2,22f);
       
       chunkGroup1 = gameObject.AddComponent<ChunkGroup>();
-      chunkGroup1.Initialize(perlinNoiseScalerFieldGenerator,chunkFactory1,maxViewDistance,chunkMaterial,
-         new []{int.MaxValue,int.MinValue,2,0,int.MaxValue,int.MinValue},seed);
-      chunkGroups.Add(chunkGroup0);
-      //chunkGroups.Add(chunkGroup1);
+      chunkGroup1.Initialize(chunkFactory0,maxViewDistance,chunkMaterial,
+         null,seed,Vector4.zero);
+      //chunkGroups.Add(chunkGroup0);
+      chunkGroups.Add(chunkGroup1);
    }
    
 

@@ -12,35 +12,19 @@ public class SDFIslandGroup : ChunkGroup
     private float islandEmptiness;
     private HashSet<Vector3Int> islandCenters = new HashSet<Vector3Int>();
     
-    public override void Initialize(IScalerFieldGenerator m_scalerFieldGenerator, IChunkFactory m_chunkFactory,
-        float m_maxViewDistance, Material m_chunkMaterial, int[] m_surroundBox, int m_seed, params object[] parameters)
+    public override void Initialize(IChunkFactory m_chunkFactory,
+        int m_maxViewDistance, Material m_chunkMaterial, int[] m_surroundBox, int m_seed, params object[] parameters)
     {
         islandMaxRadius = (int)parameters[0];
         islandEmptiness = (float)parameters[1];
-        base.Initialize(m_scalerFieldGenerator, m_chunkFactory, m_maxViewDistance, m_chunkMaterial, m_surroundBox,
+        base.Initialize(m_chunkFactory, m_maxViewDistance, m_chunkMaterial, m_surroundBox,
             m_seed, parameters);
     }
-    
-    // protected override void PrepareScalarFieldGeneratorParameters(List<Vector3Int> preproducedChunkCoords)
-    // {
-    //     List<object> parameters = new List<object>();
-    //     foreach (var chunkCoord in preproducedChunkCoords)
-    //     {
-    //         Vector3 chunkOrigin = Chunk.GetChunkCenterByCoord(chunkCoord);
-    //         if (perlinNoise3D.Get3DPerlin(chunkOrigin*0.51f)>0.9f)
-    //         {
-    //             parameters.Add(chunkOrigin);
-    //         }
-    //     }
-    //     scalerFieldParameters = parameters.ToArray();
-    //     base.PrepareScalarFieldGeneratorParameters(preproducedChunkCoords);
-    // }
-
-    public override void UpdateChunks(Vector3 playerPosition)
+    protected override void UpdateChunks(Vector3 playerPosition, float m_maxViewDistance)
     {
         //Maintain the island center chunk coords first using the same algorithm as the base class
         Vector3Int _playerChunkCoord = Chunk.GetChunkCoordByPosition(playerPosition);
-        int celledMaxViewDistance = Mathf.CeilToInt(maxViewDistance);
+        int celledMaxViewDistance = Mathf.CeilToInt(m_maxViewDistance);
         
         List<Vector3Int> newIslandCenters = new List<Vector3Int>();
         List<Vector3Int> removeIslandCenters = new List<Vector3Int>();
@@ -51,7 +35,7 @@ public class SDFIslandGroup : ChunkGroup
         {
             Vector3Int chunkCoord = _playerChunkCoord + new Vector3Int(x,y,z);
             float distance = Vector3Int.Distance(chunkCoord,_playerChunkCoord);
-            if(distance <= maxViewDistance&&
+            if(distance <= m_maxViewDistance&&
                ProcedualGeneratorUtility.isInSurroundBox(chunkCoord,surroundBox))
             {
                 if(perlinNoise3D.Get3DPerlin(Chunk.GetChunkCenterByCoord(chunkCoord) * (0.01f*islandEmptiness))>1-(1/islandEmptiness))
@@ -80,6 +64,7 @@ public class SDFIslandGroup : ChunkGroup
             scalerFieldParameters[i++] = new Vector4(chunkOrigin.x,chunkOrigin.y,chunkOrigin.z,
                 0);
         }
+        
         PrepareScalarFieldGeneratorParameters();
         
         //Update the chunks of the island
