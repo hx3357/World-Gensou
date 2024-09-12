@@ -68,7 +68,7 @@ public class GPUScalerFieldGenerator : IScalerFieldGenerator
         SetComputeShaderParameters(cs,scalerFieldRequestData);
         cs.Dispatch(kernel, Mathf.CeilToInt(dotFieldSize.x / 8.0f), 
             Mathf.CeilToInt(dotFieldSize.y / 8.0f), 
-            Mathf.CeilToInt(dotFieldSize.z / 8.0f));
+            Mathf.CeilToInt(dotFieldSize.z / 4.0f));
     }
     
     protected virtual void SetComputeShaderParameters(ComputeShader m_cs,ScalerFieldRequestData scalerFieldRequestData){ }

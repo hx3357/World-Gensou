@@ -3,6 +3,7 @@
 
 #include "../Includes/Utility.hlsl"
 #include "../Includes/RandomIsland.hlsl"
+#include "../Noise/FastSnoise.hlsl"
 
 int3 dotFieldSize;
 float3 origin;
@@ -19,7 +20,7 @@ RWStructuredBuffer<float4> outputPoints;
 RWStructuredBuffer<int> isConcreteFlagBuffer;
 RWStructuredBuffer<int> isAirFlagBuffer;
 
-[numthreads(8,8,8)]
+[numthreads(8,8,4)]
 void CSMain (uint3 id : SV_DispatchThreadID)
 {
     const float3 pos = float3(id) * cellSize+origin;
@@ -34,21 +35,22 @@ void CSMain (uint3 id : SV_DispatchThreadID)
             value = min(value, randomIslandSDFMode1(pos, islandPos, randomOffset));
             break;
         case 1:
-            float3 _pos = sdfRotateAround(pos,
-                float3(snoise(islandPos),
-                    snoise(islandPositions[i].xyz+float3(1,0,0)),
-                    snoise(islandPositions[i].xyz+float3(1,0,1))),
+            const float3 _pos = sdfRotateAround(pos,
+                float3(f_snoise(islandPos),
+                    f_snoise(islandPositions[i].xyz+float3(1,0,0)),
+                    f_snoise(islandPositions[i].xyz+float3(1,0,1))),
                 islandPositions[i].xyz);
             value = min(value, boxSDF(_pos, islandPos, float3(50, 60, 50)));
             break;
         case 2:
+                
             value = min(value, basicAstoroidSDF(islandPos,
-                float3(id) * cellSize + origin, 60+20*snoise(islandPositions[i].xyz), 20,10, randomOffset));
+                float3(id) * cellSize + origin, 60+20*f_snoise(islandPositions[i].xyz), 20,10, randomOffset));
             break;
         }
     }
     
-    value = SDFParabolaNormalize(value,isoLevel);
+    value = SDFLinearNormalize(value,isoLevel);
     
     outputPoints[GetPointIndex(id.x, id.y, id.z, dotFieldSize)] = float4(float3(id) * cellSize, value);
     if(value< isoLevel)

@@ -1,4 +1,5 @@
-#include "..\Noise\simplexNoise3D.hlsl"
+#ifndef SDFESSENTIAL_HLSL
+#define SDFESSENTIAL_HLSL
 #include "..\Noise\fractalNoise.hlsl"
 
 #define FLT_MAX 3.402823466e+38
@@ -36,19 +37,19 @@ float SDFParabolaNormalize(float value,float isoLevel)
 
 float smoothUnion(float a, float b, float k)
 {
-    float h = clamp(0.5 + 0.5 * (b - a) / k, 0.0, 1.0);
+   const float h = clamp(0.5 + 0.5 * (b - a) / k, 0.0, 1.0);
     return lerp(b, a, h) - k * h * (1.0 - h);
 }
 
 float smoothSubtraction(float a, float b, float k)
 {
-    float h = clamp(0.5 - 0.5 * (a + b) / k, 0.0, 1.0);
+   const float h = clamp(0.5 - 0.5 * (a + b) / k, 0.0, 1.0);
     return lerp(a, -b, h) + k * h * (1.0 - h);
 }
 
 float smoothIntersection(float a, float b, float k)
 {
-    float h = clamp(0.5 - 0.5 * (b - a) / k, 0.0, 1.0);
+   const float h = clamp(0.5 - 0.5 * (b - a) / k, 0.0, 1.0);
     return lerp(b, a, h) + k * h * (1.0 - h);
 }
 
@@ -67,9 +68,35 @@ float3 sdfRotateAround(float3 position,float3 rotation,float3 center)
     return mul(rotateInvertMatrix, position - center) + center;
 }
 
+float opRound( float p, float rad )
+{
+    return p - rad;
+}
+
+float3 opCheapBend( float3 p,float k)
+{
+    float c = cos(k*p.x);
+    float s = sin(k*p.x);
+   const float2x2 m = float2x2(c,-s,s,c);
+    float3 q = float3(mul(m,p.xy),p.z);
+    return q;
+}
+
+//Why unity doesn't support this?????
+#if 0
+#define CalcNormal(sdfFunc,normal,pos,...) do \
+{\
+    const float h = 0.0001;\
+    const float2 k = float2(1,-1);\
+    normal = normalize( k.xyy*sdfFunc( pos + k.xyy*h ,__VA_ARGS__) + \
+                      k.yyx*sdfFunc( pos + k.yyx*h ,__VA_ARGS__) + \
+                      k.yxy*sdfFunc( pos + k.yxy*h ,__VA_ARGS__) + \
+                      k.xxx*sdfFunc( pos + k.xxx*h ,__VA_ARGS__) );\
+}while(0)
+#endif
 
 
-//Utility functions
+//Displacement functions
 
 float getPerlinNoiseDisplacement(float3 position, float scale, float3 randomOffset)
 {
@@ -79,16 +106,6 @@ float getPerlinNoiseDisplacement(float3 position, float scale, float3 randomOffs
 float getSinDisplacement(float3 p, float scale)
 {
     return sin(scale*p.x)*sin(scale*p.y)*sin(scale*p.z);
-}
-
-float3 cartesianToSpherical(float3 p)
-{
-    float r = length(p);
-    if(p.x==0)
-        p.x = 0.0001;
-    float theta = atan2(p.z, p.x);
-    float phi = acos(p.y / r);
-    return float3(r, theta, phi);
 }
 
 //Basic SDF functions
@@ -101,7 +118,7 @@ float sphereSDF(float3 position, float3 origin, float radius)
 float boxSDF(float3 position, float3 origin, float3 size)
 {
     size /= 2;
-    float3 p = position - origin;
+   const float3 p = position - origin;
     float3 q = abs(p) - size;
     return length(max(q,0.))+min(max(q.x,max(q.y,q.z)),0.);
 }
@@ -109,6 +126,23 @@ float boxSDF(float3 position, float3 origin, float3 size)
 float infCylinderSDF(float3 position, float3 origin, float radius)
 {
     return length(position.xz-origin.xy) - radius;
+}
+
+float cutSphereSDF(float3 position, float3 origin,float r,float h)
+{
+    float3 p = position - origin;
+    p = float3(p.x,-p.y,p.z);
+    h*=-1;
+    
+    // sampling independent computations (only depend on shape)
+    float w = sqrt(r*r-h*h);
+
+    // sampling dependant computations
+    float2 q = float2( length(p.xz), p.y );
+    const float s = max( (h-r)*q.x*q.x+w*w*(h+r-2.0*q.y), h*q.x-w*q.y );
+    return (s<0.0) ? length(q)-r :
+           (q.x<w) ? h - q.y     :
+                     length(q-float2(w,h));
 }
 
 
@@ -124,3 +158,4 @@ float basicPlanetSDF(float3 origin,float3 position,float radius,float noiseScale
     return sphereSDF(position, origin, radius)+
        noiseAmp* fractalNoise(position/noiseScale + randomOffset,4,3,0.5);
 }
+#endif

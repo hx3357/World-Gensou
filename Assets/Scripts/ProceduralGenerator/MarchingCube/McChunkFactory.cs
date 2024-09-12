@@ -167,8 +167,6 @@ public class McChunkFactory: MonoBehaviour, IChunkFactory
                 Debug.LogError("GPU Readback Error");
             }
             
-            yield return null;
-
             if (tribufferRequest.done&&!isRawTriangleReady)
             {
                 rawTriangles = tribufferRequest.GetData<Triangle>();
@@ -181,9 +179,7 @@ public class McChunkFactory: MonoBehaviour, IChunkFactory
                 isCountReady = true;
             }
             
-            if(tribuffercountRequest.done&&tribufferRequest.done)
-                break;
-           
+            yield return null;
         }
         
         if (!isCountReady)
@@ -197,8 +193,24 @@ public class McChunkFactory: MonoBehaviour, IChunkFactory
         }
         
         int triangleCount = count[0];
-        Triangle[] _triangles = new Triangle[triangleCount]; 
-        rawTriangles.Slice(0,triangleCount).CopyTo(_triangles);
+        Triangle[] _triangles = new Triangle[triangleCount];
+        try
+        {
+            //Probably because of the life cycle of the requested data, the native array may have been disposed
+            //Simply starting over to reproduce the chunk is the most elegant way so far
+            rawTriangles.Slice(0, triangleCount).CopyTo(_triangles);
+        }
+        catch (ObjectDisposedException e)
+        {
+            Debug.LogWarning("Retry Produce Chunk");
+            rawTriangles.Dispose();
+            pointBuffer.Release();
+            triangleBuffer.Release();
+            triangleCountBuffer.Release();
+            currentProducingChunkSet.Remove(_origin);
+            ProduceChunk(_origin, _chunkSize, _cellSize, m_chunkMaterial);
+            yield break;
+        }
 
         rawTriangles.Dispose();
         pointBuffer.Release();
@@ -262,13 +274,13 @@ public class McChunkFactory: MonoBehaviour, IChunkFactory
     {
         if(currentProducingChunkSet.Contains(m_origin))
         {
-            Debug.Log("Chunk is already producing");
+            //Debug.Log("Chunk is already producing");
             return;
         }
 
         if (!m_isForceUpdate && chunkDict.ContainsKey(m_origin))
         {
-            Debug.LogWarning("Chunk already exists");
+            //Debug.LogWarning("Chunk already exists");
             return;
         }
         if(Chunk.zombieChunkDict.TryGetValue(m_origin, out var chunk))
