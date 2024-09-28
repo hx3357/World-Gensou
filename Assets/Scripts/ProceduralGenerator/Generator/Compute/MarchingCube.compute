@@ -1,0 +1,117 @@
+// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel CSMain
+
+#include "Includes/MCTable.hlsl"
+#include "Includes/Utility.hlsl"
+#include "Includes/Dot.hlsl"
+#include "Includes/ImplColor.hlsl"
+
+static const int numofThreads = 8;
+
+float isoSurface;
+uint3 cellCount;
+float3 cellSize;
+float3 chunkOrigin;
+
+struct Triangle
+{
+    float3 p1;
+    float3 p2;
+    float3 p3;
+    int color_impl_1;
+    int color_impl_2;
+    int color_impl_3;
+};
+
+struct ColorDot
+{
+    float4 dot;
+    int color_impl;
+};
+
+// Create a RenderTexture with enableRandomWrite flag and set it
+// with cs.SetTexture
+StructuredBuffer<Dot> inputPoints;
+AppendStructuredBuffer<Triangle> outputTriangles;
+
+
+float3 LerpEdgeEnd(const ColorDot v1,const ColorDot v2,out int lerpedImplColor)
+{
+    const float a = 1/(v1.dot.w-v2.dot.w);
+    const float3 c1 = get_expl_color(v1.color_impl);
+    const float3 c2 = get_expl_color(v2.color_impl);
+    const float3 lerpColor = c1*(isoSurface-v2.dot.w)*a + c2*(v1.dot.w-isoSurface)*a;
+    lerpedImplColor = get_impl_color(lerpColor);
+    return v1.dot*(isoSurface-v2.dot.w)*a + v2.dot*(v1.dot.w-isoSurface)*a;
+}
+
+[numthreads(numofThreads,numofThreads,numofThreads)]
+void CSMain (uint3 id : SV_DispatchThreadID)
+{
+    if(id.x >= cellCount.x-1 || id.y >= cellCount.y-1 || id.z >= cellCount.z-1)
+        return;
+    
+    ColorDot cubeValues[8] = {
+        {
+            float4(id*cellSize,inputPoints[get_point_index(id,cellCount)].w),
+            inputPoints[get_point_index(id,cellCount)].color_impl
+        },
+        {
+            float4((id+int3(1,0,0))*cellSize,inputPoints[get_point_index((id+int3(1,0,0)),cellCount)].w),
+            inputPoints[get_point_index((id+int3(1,0,0)),cellCount)].color_impl
+        },
+        {
+            float4((id+int3(1,0,1))*cellSize,inputPoints[get_point_index((id+int3(1,0,1)),cellCount)].w),
+            inputPoints[get_point_index((id+int3(1,0,1)),cellCount)].color_impl
+        },
+        {
+            float4((id+int3(0,0,1))*cellSize,inputPoints[get_point_index((id+int3(0,0,1)),cellCount)].w),
+            inputPoints[get_point_index((id+int3(0,0,1)),cellCount)].color_impl
+        },
+        {
+            float4((id+int3(0,1,0))*cellSize,inputPoints[get_point_index((id+int3(0,1,0)),cellCount)].w),
+            inputPoints[get_point_index((id+int3(0,1,0)),cellCount)].color_impl
+        },
+        {
+            float4((id+int3(1,1,0))*cellSize,inputPoints[get_point_index((id+int3(1,1,0)),cellCount)].w),
+            inputPoints[get_point_index((id+int3(1,1,0)),cellCount)].color_impl
+        },
+        {
+            float4((id+int3(1,1,1))*cellSize,inputPoints[get_point_index((id+int3(1,1,1)),cellCount)].w),
+            inputPoints[get_point_index((id+int3(1,1,1)),cellCount)].color_impl
+        },
+        {
+            float4((id+int3(0,1,1))*cellSize,inputPoints[get_point_index((id+int3(0,1,1)),cellCount)].w),
+            inputPoints[get_point_index((id+int3(0,1,1)),cellCount)].color_impl
+        }
+    };
+    
+    uint cubeIndex = 0;
+    if(cubeValues[0].dot.w < isoSurface) cubeIndex |= 1;
+    if(cubeValues[1].dot.w < isoSurface) cubeIndex |= 2;
+    if(cubeValues[2].dot.w < isoSurface) cubeIndex |= 4;
+    if(cubeValues[3].dot.w < isoSurface) cubeIndex |= 8;
+    if(cubeValues[4].dot.w < isoSurface) cubeIndex |= 16;
+    if(cubeValues[5].dot.w < isoSurface) cubeIndex |= 32;
+    if(cubeValues[6].dot.w < isoSurface) cubeIndex |= 64;
+    if(cubeValues[7].dot.w < isoSurface) cubeIndex |= 128;
+    if(cubeIndex == 0 || cubeIndex == 255)
+        return;
+ 
+    for(int i=0;triTable[cubeIndex][i]!=-1;i+=3)
+    {
+        const ColorDot p1_end_pointA = cubeValues[cornerIndexAFromEdge[triTable[cubeIndex][i]]];
+        const ColorDot p1_end_pointB = cubeValues[cornerIndexBFromEdge[triTable[cubeIndex][i]]];
+        const ColorDot p2_end_pointA = cubeValues[cornerIndexAFromEdge[triTable[cubeIndex][i+1]]];
+        const ColorDot p2_end_pointB = cubeValues[cornerIndexBFromEdge[triTable[cubeIndex][i+1]]];
+        const ColorDot p3_end_pointA = cubeValues[cornerIndexAFromEdge[triTable[cubeIndex][i+2]]];
+        const ColorDot p3_end_pointB = cubeValues[cornerIndexBFromEdge[triTable[cubeIndex][i+2]]];
+        
+        Triangle t;
+        t.p1 =  LerpEdgeEnd(p1_end_pointA,p1_end_pointB,t.color_impl_1);
+        t.p2 = LerpEdgeEnd(p2_end_pointA,p2_end_pointB,t.color_impl_2);
+        t.p3 = LerpEdgeEnd(p3_end_pointA,p3_end_pointB,t.color_impl_3);
+        
+        outputTriangles.Append(t);
+    }
+}

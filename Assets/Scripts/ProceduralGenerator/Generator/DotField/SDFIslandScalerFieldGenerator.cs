@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using Unity.Profiling;
 using UnityEngine;
 using UnityEngine.Rendering;
 using Object = System.Object;
@@ -73,12 +74,12 @@ public class SDFIslandScalerFieldGenerator : GPUScalerFieldGenerator
          m_cs.SetBuffer(0, IslandPositions, scalerFieldRequestData.buffers[3]);
    }
 
-   public override (bool,Vector4[],bool) GetState (ref ScalerFieldRequestData scalerFieldRequestData)
+   public override (bool,Dot[],bool) GetState (ref ScalerFieldRequestData scalerFieldRequestData,bool isNotGetDotfield = false)
    {
       AsyncGPUReadbackRequest dotFieldRequest = scalerFieldRequestData.requests[0];
       AsyncGPUReadbackRequest isConcreteFlagBufferRequest =scalerFieldRequestData.requests[1];
       AsyncGPUReadbackRequest isAirFlagBufferRequest = scalerFieldRequestData.requests[2];
-      Vector4[] dotField = null;
+      Dot[] dotField = null;
       scalerFieldRequestData.extraParameters ??= new(new Object[2]);
       scalerFieldRequestData.isDoneFlags ??= new bool[3];
       if (isConcreteFlagBufferRequest.done&&!scalerFieldRequestData.isDoneFlags[0])
@@ -97,7 +98,10 @@ public class SDFIslandScalerFieldGenerator : GPUScalerFieldGenerator
       }
       if(dotFieldRequest.done&&!scalerFieldRequestData.isDoneFlags[2])
       {
-         dotField = dotFieldRequest.GetData<Vector4>().ToArray();
+         if(!isNotGetDotfield)
+         {
+            dotField = dotFieldRequest.GetData<Dot>().ToArray();
+         }
          scalerFieldRequestData.isDoneFlags[2] = true;
       }
       bool isDone = isConcreteFlagBufferRequest.done && isAirFlagBufferRequest.done && dotFieldRequest.done;

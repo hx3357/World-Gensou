@@ -4,7 +4,7 @@ using UnityEngine;
 
 public sealed class PerlinNoiseScalerFieldGenerator2D : IScalerFieldGenerator
 {
-    private Vector4[] dotField;
+    private Dot[] dotField;
     private Vector3Int size;
     private int octaves;
     private float scale,persistance, lacunarity;
@@ -92,7 +92,7 @@ public sealed class PerlinNoiseScalerFieldGenerator2D : IScalerFieldGenerator
         size = dotfieldSize;
         cellsize = m_cellsize;
         float[,] noiseMap = GenerateNoiseMap();
-        dotField = new Vector4[size.x* size.y*size.z];
+        dotField = new Dot[size.x* size.y*size.z];
         bool isAirFlag = origin.y>maxHeight;
         bool isUnderGroundFlag = origin.y<0;
         isEmptyFlag = isAirFlag || isUnderGroundFlag;
@@ -104,10 +104,9 @@ public sealed class PerlinNoiseScalerFieldGenerator2D : IScalerFieldGenerator
                     for (int y = 0; y < size.y; y++)
                     {
                         Vector3 pos = new Vector3(x*cellsize.x,y*cellsize.y,z*cellsize.z);
-                        dotField[ProcedualGeneratorUtility.GetBufferIndex(x, y, z, size)] = pos;
                         float noiseValue = noiseMap[x, z];
                         int dotScalar =  pos.y+origin.y>maxHeight*heightMapping.Evaluate(heightScale* noiseValue+heightOffset)  ? 1 : 0;
-                        dotField[ProcedualGeneratorUtility.GetBufferIndex(x, y, z, size)].w = dotScalar;
+                        dotField[ProcedualGeneratorUtility.GetBufferIndex(x, y, z, size)].SetValue(dotScalar, 255, 255, 255);
                     }
                 }
             }
@@ -115,18 +114,17 @@ public sealed class PerlinNoiseScalerFieldGenerator2D : IScalerFieldGenerator
         return new ScalerFieldRequestData();
     }
     
-    public (bool,Vector4[],bool) GetState(ref ScalerFieldRequestData scalerFieldRequestData)
+    public (bool,Dot[],bool) GetState(ref ScalerFieldRequestData scalerFieldRequestData,bool isNotGetDotfield = false)
     {
-        return (true,GetDotField(scalerFieldRequestData, out bool isEmpty),isEmpty);
+        return (true,GetDotField(scalerFieldRequestData),this.isEmptyFlag);
     }
     
-    private Vector4[] GetDotField(ScalerFieldRequestData scalerFieldRequestData, out bool isEmptyFlag)
+    private Dot[] GetDotField(ScalerFieldRequestData scalerFieldRequestData)
     {
-        isEmptyFlag = this.isEmptyFlag;
         return dotField;
     }
     
-    public void Release(ScalerFieldRequestData scalerFieldRequestData)
+    public void Release(ScalerFieldRequestData scalerFieldRequestData, bool isReleaseDotfieldBuffer)
     {
         dotField = null;
     }

@@ -9,7 +9,7 @@
 //SDF operations
 
 //Linearly normalize the SDF value to 0-1
-float SDFLinearNormalize(float value,float isoSurface)
+float sdf_linear_normalize(float value,float isoSurface)
 {
     if(isoSurface==0.5f)
         return clamp(1/(2*SDF_MAX)*value + isoSurface,0,1);
@@ -22,65 +22,38 @@ float SDFLinearNormalize(float value,float isoSurface)
     }
 }
 
-float SDFBinaryNormalize(float value,float isoLevel)
+float sdf_binary_normalize(float value,float isoLevel)
 {
     return value < isoLevel ? 0 : 1;
 }
 
 //Normalize the SDF value to 0-1
 //Not perfect because the isosurface should be between 0.2 and 0.8 but it just works
-float SDFParabolaNormalize(float value,float isoLevel)
+float sdf_parabola_normalize(float value,float isoLevel)
 {
     value = clamp(value,-SDF_MAX,SDF_MAX);
     return clamp((1-2*isoLevel)/(2*SDF_MAX*SDF_MAX)*value*value + 1/(2*SDF_MAX)*value + isoLevel,0,1);
 }
 
-float smoothUnion(float a, float b, float k)
+float smooth_union(float a, float b, float k)
 {
    const float h = clamp(0.5 + 0.5 * (b - a) / k, 0.0, 1.0);
     return lerp(b, a, h) - k * h * (1.0 - h);
 }
 
-float smoothSubtraction(float a, float b, float k)
+float smooth_subtraction(float a, float b, float k)
 {
    const float h = clamp(0.5 - 0.5 * (a + b) / k, 0.0, 1.0);
     return lerp(a, -b, h) + k * h * (1.0 - h);
 }
 
-float smoothIntersection(float a, float b, float k)
+float smooth_intersection(float a, float b, float k)
 {
    const float h = clamp(0.5 - 0.5 * (b - a) / k, 0.0, 1.0);
     return lerp(b, a, h) + k * h * (1.0 - h);
 }
 
-float3 sdfTranslate(float3 position,float3 translation)
-{
-    return position-translation;
-}
 
-float3 sdfRotateAround(float3 position,float3 rotation,float3 center)
-{
-    const float3x3 rotateInvertMatrix = float3x3(
-        float3(cos(rotation.y) * cos(rotation.z), cos(rotation.y) * sin(rotation.z), -sin(rotation.y)),
-        float3(sin(rotation.x) * sin(rotation.y) * cos(rotation.z) - cos(rotation.x) * sin(rotation.z), sin(rotation.x) * sin(rotation.y) * sin(rotation.z) + cos(rotation.x) * cos(rotation.z), sin(rotation.x) * cos(rotation.y)),
-        float3(cos(rotation.x) * sin(rotation.y) * cos(rotation.z) + sin(rotation.x) * sin(rotation.z), cos(rotation.x) * sin(rotation.y) * sin(rotation.z) - sin(rotation.x) * cos(rotation.z), cos(rotation.x) * cos(rotation.y))
-    );
-    return mul(rotateInvertMatrix, position - center) + center;
-}
-
-float opRound( float p, float rad )
-{
-    return p - rad;
-}
-
-float3 opCheapBend( float3 p,float k)
-{
-    float c = cos(k*p.x);
-    float s = sin(k*p.x);
-   const float2x2 m = float2x2(c,-s,s,c);
-    float3 q = float3(mul(m,p.xy),p.z);
-    return q;
-}
 
 //Why unity doesn't support this?????
 #if 0
@@ -98,24 +71,24 @@ float3 opCheapBend( float3 p,float k)
 
 //Displacement functions
 
-float getPerlinNoiseDisplacement(float3 position, float scale, float3 randomOffset)
+float get_perlin_noise_displacement(float3 position, float scale, float3 randomOffset)
 {
     return (1 - ClassicNoise(position / scale + randomOffset));
 }
 
-float getSinDisplacement(float3 p, float scale)
+float get_sin_displacement(float3 p, float scale)
 {
     return sin(scale*p.x)*sin(scale*p.y)*sin(scale*p.z);
 }
 
 //Basic SDF functions
 
-float sphereSDF(float3 position, float3 origin, float radius)
+float sphere_sdf(float3 position, float3 origin, float radius)
 {
     return length(position - origin) - radius;
 }
 
-float boxSDF(float3 position, float3 origin, float3 size)
+float box_sdf(float3 position, float3 origin, float3 size)
 {
     size /= 2;
    const float3 p = position - origin;
@@ -123,12 +96,12 @@ float boxSDF(float3 position, float3 origin, float3 size)
     return length(max(q,0.))+min(max(q.x,max(q.y,q.z)),0.);
 }
 
-float infCylinderSDF(float3 position, float3 origin, float radius)
+float inf_cylinder_sdf(float3 position, float3 origin, float radius)
 {
     return length(position.xz-origin.xy) - radius;
 }
 
-float cutSphereSDF(float3 position, float3 origin,float r,float h)
+float cut_sphere_sdf(float3 position, float3 origin,float r,float h)
 {
     float3 p = position - origin;
     p = float3(p.x,-p.y,p.z);
@@ -147,15 +120,15 @@ float cutSphereSDF(float3 position, float3 origin,float r,float h)
 
 
 //Island sdf
-float basicAstoroidSDF(float3 origin,float3 position,float radius,float noiseScale,float noiseAmp ,float3 randomOffset)
+float basic_astoroid_sdf(float3 origin,float3 position,float radius,float noiseScale,float noiseAmp ,float3 randomOffset)
 {
-    return sphereSDF(position, origin, radius)+
-       noiseAmp* getPerlinNoiseDisplacement(position, noiseScale,randomOffset);
+    return sphere_sdf(position, origin, radius)+
+       noiseAmp* get_perlin_noise_displacement(position, noiseScale,randomOffset);
 }
 
-float basicPlanetSDF(float3 origin,float3 position,float radius,float noiseScale,float noiseAmp ,float3 randomOffset)
+float bbasic_planet_sdf(float3 origin,float3 position,float radius,float noiseScale,float noiseAmp ,float3 randomOffset)
 {
-    return sphereSDF(position, origin, radius)+
+    return sphere_sdf(position, origin, radius)+
        noiseAmp* fractalNoise(position/noiseScale + randomOffset,4,3,0.5);
 }
 #endif

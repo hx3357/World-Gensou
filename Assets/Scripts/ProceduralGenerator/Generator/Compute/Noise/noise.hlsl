@@ -75,4 +75,9 @@ float PeriodicNoise(float3 p, float3 rep)
     return ClassicNoise_impl(i0, f, i1, f - 1);
 }
 
+float3 ClassicNoiseVec(float3 p)
+{
+    return float3(ClassicNoise(p), ClassicNoise(p + 57.0), ClassicNoise(p + 113.0));
+}
+
 #endif

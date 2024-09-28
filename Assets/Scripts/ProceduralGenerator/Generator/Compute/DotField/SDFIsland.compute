@@ -1,0 +1,64 @@
+// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel CSMain
+
+#include "../Includes/Utility.hlsl"
+#include "../Includes/RandomIsland.hlsl"
+#include "../Includes/Dot.hlsl"
+#include "../Includes/SDFOperations.hlsl"
+#include "../Includes/SDFEssential.hlsl"
+
+int3 dotFieldSize;
+float3 origin;
+float cellSize;
+
+float scale;
+float isoLevel;
+float3 randomOffset;
+
+int islandCount;
+StructuredBuffer<float4> islandPositions;
+
+RWStructuredBuffer<Dot> outputPoints;
+RWStructuredBuffer<int> isConcreteFlagBuffer;
+RWStructuredBuffer<int> isAirFlagBuffer;
+
+[numthreads(8,8,4)]
+void CSMain (uint3 id : SV_DispatchThreadID)
+{
+    if(id.x >= dotFieldSize.x || id.y >= dotFieldSize.y || id.z >= dotFieldSize.z)
+        return;
+    
+    const float3 pos = id * cellSize+origin;
+    Dot dot;
+    dot.w = SDF_MAX;
+    dot.color_impl = 0x00FFFFFF;
+    for (int i=0;i<islandCount;i++)
+    {
+        const float3 islandPos = islandPositions[i].xyz;
+        switch (islandPositions[i].w)
+        {
+        default:
+        case 0:
+            // value = min(value, random_island_sdf_mode1(pos, islandPos, randomOffset));
+            // dot = colored_union(dot, duck_world(pos,300*float3(1,1.2,1)));
+            // float3 duckpos = sdf_pos_islandlize(pos,50);
+            // dot = colored_union(dot, duck(duckpos,0));
+            break;
+        case 1:
+            break;
+        case 2:
+            break;
+        }
+    }
+    
+    outputPoints[get_point_index(id, dotFieldSize)] =dot;
+    
+    if(dot.w < isoLevel)
+    {
+       isConcreteFlagBuffer[0]++;
+    }
+    else
+    {
+        isAirFlagBuffer[0]++;
+    }
+}

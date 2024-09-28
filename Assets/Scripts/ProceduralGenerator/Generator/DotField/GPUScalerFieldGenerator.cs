@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using Unity.Profiling;
 using UnityEngine;
 using UnityEngine.Rendering;
 
@@ -39,14 +40,18 @@ public class GPUScalerFieldGenerator : IScalerFieldGenerator
 
     protected virtual void InitBuffer()
     {
-        ComputeBuffer outputPointBuffer = new ComputeBuffer(dotFieldSize.x*dotFieldSize.y*dotFieldSize.z, sizeof(float)*4);
+        ComputeBuffer outputPointBuffer = new ComputeBuffer(dotFieldSize.x*dotFieldSize.y*dotFieldSize.z, 
+            Dot.GetSize());
         buffers.Add(outputPointBuffer);
     }
     
-    public virtual void Release(ScalerFieldRequestData scalerFieldRequestData)
+    public virtual void Release(ScalerFieldRequestData scalerFieldRequestData, bool isNotReleaseDotfieldBuffer = false)
     {
         foreach (var i in scalerFieldRequestData.buffers)
         {
+            if(isNotReleaseDotfieldBuffer&& i == scalerFieldRequestData.buffers[0])
+                continue;
+                
             i.Release();
         }
     }
@@ -54,7 +59,7 @@ public class GPUScalerFieldGenerator : IScalerFieldGenerator
     protected virtual void GenerateRequest(ScalerFieldRequestData scalerFieldRequestData)
     {
         request = AsyncGPUReadback.Request(scalerFieldRequestData.buffers[0],
-            dotFieldSize.x*dotFieldSize.y*dotFieldSize.z*sizeof(float)*4,0);
+            dotFieldSize.x*dotFieldSize.y*dotFieldSize.z*Dot.GetSize(),0);
         requests.Add(request);
     }
     
@@ -103,21 +108,19 @@ public class GPUScalerFieldGenerator : IScalerFieldGenerator
         return scalerFieldRequestData;
     }
     
-    public virtual (bool,Vector4[],bool) GetState(ref ScalerFieldRequestData scalerFieldRequestData)
+    public virtual (bool,Dot[],bool) GetState(ref ScalerFieldRequestData scalerFieldRequestData,bool isNotGetDotfield = false)
     {
         if (scalerFieldRequestData.requests[0].done)
-            return (true,GetDotField(scalerFieldRequestData, out bool isEmpty),isEmpty);
-        else
-            return (false,null,false);
+            return (true, isNotGetDotfield? null: GetDotField(scalerFieldRequestData), GetEmptyState(scalerFieldRequestData));
+     
+        return (false,null,false);
     }
     
-    private Vector4[] GetDotField(ScalerFieldRequestData scalerFieldRequestData, out bool isEmpty)
+    private Dot[] GetDotField(ScalerFieldRequestData scalerFieldRequestData)
     {
-        Vector4[] dotField = new Vector4[dotFieldSize.x*dotFieldSize.y*dotFieldSize.z];
-        scalerFieldRequestData.requests[0].GetData<Vector4>().CopyTo(dotField);
-        isEmpty = GetEmptyState(scalerFieldRequestData);
+        Dot[] dotField = new Dot[dotFieldSize.x*dotFieldSize.y*dotFieldSize.z];
+        scalerFieldRequestData.requests[0].GetData<Dot>().CopyTo(dotField);
         return dotField;
     }
-    
     
 }

@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using Unity.VisualScripting;
 using UnityEngine;
 
 public class ChunkGroup : MonoBehaviour
@@ -19,9 +20,8 @@ public class ChunkGroup : MonoBehaviour
 
    protected PerlinNoise3D perlinNoise3D;
    
-   private bool isFirstUpdating;
-   private bool isFirstUpdated;
-   private int firstUpdateFrameInterval = 10;
+   private int chunksNumPerGenerate = 50;
+   private int chunksGenerationInterval = 1;
    
    /// <summary>
    /// 
@@ -87,42 +87,36 @@ public class ChunkGroup : MonoBehaviour
       
       PrepareScalarFieldGeneratorParameters();
 
-      foreach (var chunkCoord in preproducedChunks)
-      {
-         chunkFactory.ProduceChunk(chunkCoord,chunkMaterial);
-         activeChunks.Add(chunkCoord);
-      }
-   }
-   
-   private void FirstUpdate(Vector3 playerPosition)
-   {
-      isFirstUpdating = true;
-      StartCoroutine(FirstUpdateCoroutine(playerPosition));
-   }
-   
-   IEnumerator FirstUpdateCoroutine(Vector3 playerPosition)
-   {
+      // foreach (var chunkCoord in preproducedChunks)
+      // {
+      //    chunkFactory.ProduceChunk(chunkCoord,chunkMaterial);
+      //    activeChunks.Add(chunkCoord);
+      // }
       
-      for(int viewDistance = 1;viewDistance<=maxViewDistance;viewDistance++)
+      AsyncLoadChunks(preproducedChunks);
+   }
+   
+   protected void AsyncLoadChunks(List<Vector3Int> chunkCoords)
+   {
+      StartCoroutine(AsyncLoadChunksCoroutine(chunkCoords));
+   }
+   
+   IEnumerator AsyncLoadChunksCoroutine(List<Vector3Int> chunkCoords)
+   {
+      for(int i=0;i<chunkCoords.Count;)
       {
-         UpdateChunks(playerPosition,viewDistance);
-         for(int frame = 0;frame<firstUpdateFrameInterval;frame++)
+         for(int j=0;j<chunksNumPerGenerate&&i<chunkCoords.Count;j++)
+         {
+            activeChunks.Add(chunkCoords[i]);
+            chunkFactory.ProduceChunk(chunkCoords[i++],chunkMaterial);
+         }
+         for(int j=0;j<chunksGenerationInterval;j++)
             yield return null;
       }
-      
-      isFirstUpdating = false;
-      isFirstUpdated = true;
-     
    }
 
    public void UpdateChunkGroup(Vector3 playerPosition)
    {
-      if(isFirstUpdating)return;
-      if (!isFirstUpdated)
-      {
-         FirstUpdate(playerPosition);
-         return;
-      }
       UpdateChunks( playerPosition,maxViewDistance);
    }
 }

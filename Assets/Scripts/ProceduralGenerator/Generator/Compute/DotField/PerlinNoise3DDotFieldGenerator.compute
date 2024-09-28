@@ -25,7 +25,7 @@ void CSMain (uint3 id : SV_DispatchThreadID)
     }
     float3 localPos = float3(id) * cellSize;
     float value = 1- ClassicNoise((origin+ localPos) / scale + randomOffset);
-    outputPoints[GetPointIndex(id.x, id.y, id.z, dotFieldSize)] = float4(localPos, value);
+    outputPoints[get_point_index(id, dotFieldSize)] = float4(localPos, value);
     if(value> isoLevel)
     {
         InterlockedAdd(isConcreteFlagBuffer[0],-1);
