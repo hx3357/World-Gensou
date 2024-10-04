@@ -1,7 +1,5 @@
-// Each #kernel tells which function to compile; you can have many kernels
+﻿// Each #kernel tells which function to compile; you can have many kernels
 #pragma kernel CSMain
-
-#define ISLAND_COUNT 10
 
 #include "../Includes/Utility.hlsl"
 #include "../Includes/WorldSDF/DuckWorld.hlsl"
@@ -9,7 +7,6 @@
 #include "../Includes/Dot.hlsl"
 #include "../Includes/SDFOperations.hlsl"
 #include "../Includes/SDFEssential.hlsl"
-#include "../Includes/Island.hlsl"
 
 int3 dotFieldSize;
 float3 origin;
@@ -20,10 +17,8 @@ float isoLevel;
 float3 randomOffset;
 
 int islandCount;
-float4 islandPositions[ISLAND_COUNT];
-
-//Radius, Height
-float4 islandParameters[ISLAND_COUNT];
+StructuredBuffer<float4> islandPositions;
+StructuredBuffer<float4> avgOrigins;
 
 RWStructuredBuffer<Dot> outputPoints;
 RWStructuredBuffer<int> isConcreteFlagBuffer;
@@ -38,27 +33,24 @@ void CSMain (uint3 id : SV_DispatchThreadID)
     const float3 pos = id * cellSize+origin;
     DotExpl dot = INIT_DOT_EXPL;
     
-    for (int i=0;i<islandCount;i++)
+    const float baseRadius = 100;
+    const float height = 100;
+    float sum = SDF_MAX;
+    const float3 basicFbmShapePos = sdf_pos_islandlize(pos,avgOrigins[0],0);
+    for(int i=0;i<islandCount;i++)
     {
-        dot = colored_union(dot, island_basic_shape_sdf(pos,
-            islandPositions[i].xyz,
-            islandPositions[i].xyz,
-            islandParameters[i].x,
-            islandParameters[i].y,
-            WHITE));
+        sum = smooth_union(sum,
+            neo_fbm_shape_sdf(basicFbmShapePos - islandPositions[i],islandPositions[i], baseRadius, height, 5,1.2,0.9),
+            1);
     }
-    
-    //dot = colored_union(dot, island_world(pos,int3(1,1,1)*100));
+    sum = max(sum,-sdf_plane(pos,-height));
+    dot = create_dot_expl(sum,GRAY);
     
     dot.w = sdf_linear_normalize(dot.w, isoLevel);
     outputPoints[get_point_index(id, dotFieldSize)] = convert_dot_expl_to_dot(dot);
     
     if(dot.w < isoLevel)
-    {
-       isConcreteFlagBuffer[0]++;
-    }
+        isConcreteFlagBuffer[0]++;
     else
-    {
         isAirFlagBuffer[0]++;
-    }
 }

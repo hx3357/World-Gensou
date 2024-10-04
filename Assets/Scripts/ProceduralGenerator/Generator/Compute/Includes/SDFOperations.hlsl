@@ -4,63 +4,92 @@
 #define MINVALUE .01
 
 #include "Dot.hlsl"
-#include "ImplColor.hlsl"
+#include "CustomColor.hlsl"
 
-Dot colored_union(Dot a, Dot b)
+DotExpl colored_union(DotExpl a, DotExpl b)
 {
-   Dot result;
+   DotExpl result;
    if(a.w<b.w)
    {
       result.w = a.w;
-      result.color_impl = a.color_impl;
+      result.color_expl = a.color_expl;
    }else
    {
       result.w = b.w;
-      result.color_impl = b.color_impl;
+      result.color_expl = b.color_expl;
    }
    return result;
 }
 
-Dot colored_intersection(Dot a, Dot b)
+DotExpl colored_intersection(DotExpl a, DotExpl b)
 {
-   Dot result;
+   DotExpl result;
    if(a.w>b.w)
    {
       result.w = a.w;
-      result.color_impl = a.color_impl;
+      result.color_expl = a.color_expl;
    }else
    {
       result.w = b.w;
-      result.color_impl = b.color_impl;
+      result.color_expl = b.color_expl;
    }
    return result;
 }
 
-Dot smooth_colored_union(Dot a, Dot b, float k)
+DotExpl smooth_colored_union(DotExpl a, DotExpl b, float k)
 {
-   Dot result;
+   DotExpl result;
    const float h = clamp(0.5 + 0.5 * (b.w - a.w) / k, 0.0, 1.0);
    result.w = lerp(b.w, a.w, h) - k * h * (1.0 - h);
-   result.color_impl = lerp_impl_color(b.color_impl, a.color_impl, h);
+   result.color_expl = lerp(b.color_expl, a.color_expl, h);
    return result;
 }
 
-Dot smooth_colored_intersection(Dot a, Dot b, float k)
+DotExpl smooth_colored_intersection(DotExpl a, DotExpl b, float k)
 {
-   Dot result;
+   DotExpl result;
    const float h = clamp(0.5 - 0.5 * (b.w - a.w) / k, 0.0, 1.0);
    result.w = lerp(b.w, a.w, h) + k * h * (1.0 - h);
-   result.color_impl = lerp_impl_color(b.color_impl, a.color_impl, h);
+   result.color_expl = lerp(b.color_expl, a.color_expl, h);
    return result;
 }
 
-Dot smooth_colored_subtraction(Dot a, Dot b, float k)
+DotExpl smooth_colored_subtraction(DotExpl a, DotExpl b, float k)
 {
-   Dot result;
+   DotExpl result;
    const float h = clamp(0.5 - 0.5 * (a.w + b.w) / k, 0.0, 1.0);
    result.w = lerp(a.w, -b.w, h) + k * h * (1.0 - h);
-   result.color_impl = a.color_impl;
+   result.color_expl =  lerp(a.color_expl, b.color_expl, h);
    return result;
+}
+
+float smooth_union(float a, float b, float k)
+{
+   const float h = clamp(0.5 + 0.5 * (b - a) / k, 0.0, 1.0);
+   return lerp(b, a, h) - k * h * (1.0 - h);
+}
+
+float smooth_subtraction(float a, float b, float k)
+{
+   const float h = clamp(0.5 - 0.5 * (a + b) / k, 0.0, 1.0);
+   return lerp(a, -b, h) + k * h * (1.0 - h);
+}
+
+float smooth_intersection(float a, float b, float k)
+{
+   const float h = clamp(0.5 - 0.5 * (b - a) / k, 0.0, 1.0);
+   return lerp(b, a, h) + k * h * (1.0 - h);
+}
+
+DotExpl disform(DotExpl dot,float r)
+{
+   dot.w -= r;
+   return dot;
+}
+
+float disform(float w,float r)
+{
+   return w-r;
 }
 
 //Position operations
@@ -99,23 +128,37 @@ float3 sdf_pos_bend( float3 p,float k)
    return q;
 }
 
-float3 sdf_pos_repeat(float3 p, float3 size)
+float3 sdf_pos_repeat_3D(float3 p, float3 size)
 {
    return p-round(p/size)*size;
 }
 
-float island_transform(float x)
+float3 sdf_pos_repeat_2D(float3 p, float2 size)
 {
-   if(x>0)return 1;
-   return -0.01*x+1;
+   return p-round(p/float3(size,1))*float3(size,1);
 }
 
-float3 sdf_pos_islandlize(float3 p,float h)
+float island_transform(float x)
+{
+   if(x>=0)return 1;
+   return 1/(-0.01*x+1);
+}
+
+//Island-like scaling
+float3 sdf_pos_islandlize(float3 p,float3 origin,float h)
 {
    if(p.y>h)
       return p;
-   float sliceScale = island_transform(p.y-h);
-   return float3(p.x,0,p.z)*sliceScale+float3(0,p.y,0);
+   const float sliceScale = island_transform(p.y-h);
+   return float3(p.x-origin.x,0,p.z-origin.z)/sliceScale+float3(origin.x,p.y,origin.z);
+}
+
+DotExpl sdf_postIslandlize(float3 p,DotExpl dot,float h,float isoLevel)
+{
+   if(p.y>h)
+      return dot;
+   dot.w  = (dot.w-isoLevel)*island_transform(p.y-h) + isoLevel;
+   return dot;
 }
 
 #endif

@@ -1,4 +1,7 @@
-﻿#include "noise.hlsl"
+﻿#ifndef FRACTALNOISE_HLSL
+#define FRACTALNOISE_HLSL
+
+#include "noise.hlsl"
 
 float fractalNoise(float3 pos,int ocatveCount,float lacunarity,float persistance)
 {
@@ -15,3 +18,5 @@ float fractalNoise(float3 pos,int ocatveCount,float lacunarity,float persistance
     }
     return sum/max;
 }
+
+#endif

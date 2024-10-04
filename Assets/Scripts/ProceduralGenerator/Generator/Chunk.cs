@@ -20,7 +20,8 @@ public class Chunk : MonoBehaviour
     public Vector4[] dotField;
     public Vector3Int dotFieldSize;
     
-    
+    public static Vector3Int universalChunkSize;
+    public static Vector3 universalCellSize;
     
     /// <summary>
     /// If a chunk is static, chunk exclusive computation will be executed constantly
@@ -68,29 +69,29 @@ public class Chunk : MonoBehaviour
     #region Static Field
     public static void SetUniversalChunkSize(Vector3Int size,Vector3 cellsize)
     {
-        IChunkFactory.universalChunkSize = size;
-        IChunkFactory.universalCellSize = cellsize;
+        universalChunkSize = size;
+       universalCellSize = cellsize;
     }
 
-    public static Vector3 GetChunkOriginByCoord(Vector3Int coord)
+    public static Vector3  GetChunkOriginByCoord(Vector3Int coord)
     {
-        return new Vector3(coord.x*IChunkFactory.universalChunkSize.x*IChunkFactory.universalCellSize.x,
-            coord.y*IChunkFactory.universalChunkSize.y*IChunkFactory.universalCellSize.y,
-            coord.z*IChunkFactory.universalChunkSize.z*IChunkFactory.universalCellSize.z);
+        return new Vector3(coord.x*universalChunkSize.x*universalCellSize.x,
+            coord.y*universalChunkSize.y*universalCellSize.y,
+            coord.z*universalChunkSize.z*universalCellSize.z);
     }
     
     public static Vector3 GetChunkCenterByCoord(Vector3Int coord)
     {
-        return GetChunkOriginByCoord(coord) + new Vector3((IChunkFactory.universalChunkSize.x-1)*IChunkFactory.universalCellSize.x/2,
-            (IChunkFactory.universalChunkSize.y-1)*IChunkFactory.universalCellSize.y/2,
-            (IChunkFactory.universalChunkSize.z-1)*IChunkFactory.universalCellSize.z/2);
+        return GetChunkOriginByCoord(coord) + new Vector3((universalChunkSize.x-1)*universalCellSize.x/2,
+            (universalChunkSize.y-1)*universalCellSize.y/2,
+            (universalChunkSize.z-1)*universalCellSize.z/2);
     }
     
     public static Vector3Int GetChunkCoordByPosition(Vector3 position)
     {
-        return new Vector3Int(Mathf.FloorToInt(position.x/IChunkFactory.universalChunkSize.x/IChunkFactory.universalCellSize.x),
-            Mathf.FloorToInt(position.y/IChunkFactory.universalChunkSize.y/IChunkFactory.universalCellSize.y),
-            Mathf.FloorToInt(position.z/IChunkFactory.universalChunkSize.z/IChunkFactory.universalCellSize.z));
+        return new Vector3Int(Mathf.FloorToInt(position.x/universalChunkSize.x/universalCellSize.x),
+            Mathf.FloorToInt(position.y/universalChunkSize.y/universalCellSize.y),
+            Mathf.FloorToInt(position.z/universalChunkSize.z/universalCellSize.z));
     }
     
     /// <summary>
@@ -107,6 +108,23 @@ public class Chunk : MonoBehaviour
         }
         return (LODLevel)int.MaxValue;
     }
+    
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <returns>Cell size then chunk size</returns>
+    public static (Vector3, Vector3Int) GetCellAndChunkSize()
+    {
+        return (universalCellSize,universalChunkSize);
+    }
+
+    public static Vector3 GetWorldSize()
+    {
+        return new Vector3(universalChunkSize.x * universalCellSize.x, 
+            universalChunkSize.y * universalCellSize.y, 
+            universalChunkSize.z * universalCellSize.z);
+    }
+    
     #endregion
     
     public void SetMesh(Mesh m_mesh)

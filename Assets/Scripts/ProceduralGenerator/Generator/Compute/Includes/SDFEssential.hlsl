@@ -35,24 +35,6 @@ float sdf_parabola_normalize(float value,float isoLevel)
     return clamp((1-2*isoLevel)/(2*SDF_MAX*SDF_MAX)*value*value + 1/(2*SDF_MAX)*value + isoLevel,0,1);
 }
 
-float smooth_union(float a, float b, float k)
-{
-   const float h = clamp(0.5 + 0.5 * (b - a) / k, 0.0, 1.0);
-    return lerp(b, a, h) - k * h * (1.0 - h);
-}
-
-float smooth_subtraction(float a, float b, float k)
-{
-   const float h = clamp(0.5 - 0.5 * (a + b) / k, 0.0, 1.0);
-    return lerp(a, -b, h) + k * h * (1.0 - h);
-}
-
-float smooth_intersection(float a, float b, float k)
-{
-   const float h = clamp(0.5 - 0.5 * (b - a) / k, 0.0, 1.0);
-    return lerp(b, a, h) + k * h * (1.0 - h);
-}
-
 
 
 //Why unity doesn't support this?????
@@ -98,7 +80,7 @@ float box_sdf(float3 position, float3 origin, float3 size)
 
 float inf_cylinder_sdf(float3 position, float3 origin, float radius)
 {
-    return length(position.xz-origin.xy) - radius;
+    return length(position.xz-origin.xz) - radius;
 }
 
 float cut_sphere_sdf(float3 position, float3 origin,float r,float h)

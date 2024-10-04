@@ -6,14 +6,14 @@ using Unity.VisualScripting;
 using UnityEngine;
 using Random = UnityEngine.Random;
 
-public class SDFIslandGroup : ChunkGroup
+public class IslandGroup : ChunkGroup
 {
     private int islandMaxRadius;
     private float islandEmptiness;
     private HashSet<Vector3Int> islandCenters = new HashSet<Vector3Int>();
     
     public override void Initialize(IChunkFactory m_chunkFactory,
-        int m_maxViewDistance, Material m_chunkMaterial, int[] m_surroundBox, int m_seed, params object[] parameters)
+        int m_maxViewDistance, Material m_chunkMaterial, SurroundBox m_surroundBox, int m_seed, params object[] parameters)
     {
         islandMaxRadius = (int)parameters[0];
         islandEmptiness = (float)parameters[1];
@@ -36,7 +36,7 @@ public class SDFIslandGroup : ChunkGroup
             Vector3Int chunkCoord = _playerChunkCoord + new Vector3Int(x,y,z);
             float distance = Vector3Int.Distance(chunkCoord,_playerChunkCoord);
             if(distance <= m_maxViewDistance&&
-               ProcedualGeneratorUtility.isInSurroundBox(chunkCoord,surroundBox))
+               surroundBox.IsInSurroundBox(chunkCoord))
             {
                 if(perlinNoise3D.Get3DPerlin(Chunk.GetChunkCenterByCoord(chunkCoord) * (0.01f*islandEmptiness))>1-(1/islandEmptiness))
                 {

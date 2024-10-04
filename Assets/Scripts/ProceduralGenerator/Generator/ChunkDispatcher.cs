@@ -41,7 +41,12 @@ public class ChunkDispatcher : MonoBehaviour
    private HashSet<Vector3Int> activeChunks = new HashSet<Vector3Int>();
    
    private List<ChunkGroup> chunkGroups = new List<ChunkGroup>();
-   
+
+   private void Awake()
+   {
+      Chunk.SetUniversalChunkSize(chunkSize * Vector3Int.one,cellSize *Vector3.one);
+   }
+
    private void Start()
    {
       Initialize();
@@ -71,7 +76,7 @@ public class ChunkDispatcher : MonoBehaviour
 
    void Initialize()
    {
-      Chunk.SetUniversalChunkSize(chunkSize * Vector3Int.one,cellSize *Vector3.one);
+      
       
       //Set up the down sampler
       IScalerFieldDownSampler downSampler = new GPUTrilinearScalerFieldDownSampler(downSampleCS);
@@ -100,14 +105,17 @@ public class ChunkDispatcher : MonoBehaviour
 
       ChunkGroup chunkGroup0, chunkGroup1;
       
-      chunkGroup0 = gameObject.AddComponent<SDFIslandGroup>();
+      chunkGroup0 = gameObject.AddComponent<IslandGroup>();
       chunkGroup0.Initialize(chunkFactory0,maxViewDistance,chunkMaterial,
-         new []{int.MaxValue,int.MinValue,int.MaxValue,int.MinValue,int.MaxValue,int.MinValue},seed,
+         new SurroundBox(int.MinValue,int.MaxValue,int.MinValue,int.MaxValue,int.MinValue,int.MaxValue),seed,
          2,22f);
       
       chunkGroup1 = gameObject.AddComponent<ChunkGroup>();
       chunkGroup1.Initialize(chunkFactory0,maxViewDistance,chunkMaterial,
-         null,seed,Vector4.zero);
+         null,seed,new SDFIslandSFGParameter( 
+            new []{ new Vector4(300,100,100,0),new Vector4(-300,100,100,0)},
+            new []{new Vector4(100,100,100,0),new Vector4(100,100,100,0)}
+            ));
       //chunkGroups.Add(chunkGroup0);
       chunkGroups.Add(chunkGroup1);
    }

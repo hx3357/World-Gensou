@@ -41,19 +41,19 @@ float ClassicNoise_impl(float3 pi0, float3 pf0, float3 pi1, float3 pf1)
    const float3 g011 = normalize(float3(gx1.z, gy1.z, gz1.z));
     const float3 g111 = normalize(float3(gx1.w, gy1.w, gz1.w));
 
-    float n000 = dot(g000, pf0);
-    float n100 = dot(g100, float3(pf1.x, pf0.y, pf0.z));
-    float n010 = dot(g010, float3(pf0.x, pf1.y, pf0.z));
-    float n110 = dot(g110, float3(pf1.x, pf1.y, pf0.z));
-    float n001 = dot(g001, float3(pf0.x, pf0.y, pf1.z));
-    float n101 = dot(g101, float3(pf1.x, pf0.y, pf1.z));
-    float n011 = dot(g011, float3(pf0.x, pf1.y, pf1.z));
-    float n111 = dot(g111, pf1);
+   const float n000 = dot(g000, pf0);
+   const float n100 = dot(g100, float3(pf1.x, pf0.y, pf0.z));
+   const float n010 = dot(g010, float3(pf0.x, pf1.y, pf0.z));
+   const float n110 = dot(g110, float3(pf1.x, pf1.y, pf0.z));
+   const float n001 = dot(g001, float3(pf0.x, pf0.y, pf1.z));
+   const float n101 = dot(g101, float3(pf1.x, pf0.y, pf1.z));
+   const float n011 = dot(g011, float3(pf0.x, pf1.y, pf1.z));
+   const float n111 = dot(g111, pf1);
 
-    float3 fade_xyz = wglnoise_fade(pf0);
-    float4 n_z = lerp(float4(n000, n100, n010, n110),
+   const float3 fade_xyz = wglnoise_fade(pf0);
+   const float4 n_z = lerp(float4(n000, n100, n010, n110),
                       float4(n001, n101, n011, n111), fade_xyz.z);
-    float2 n_yz = lerp(n_z.xy, n_z.zw, fade_xyz.y);
+   const float2 n_yz = lerp(n_z.xy, n_z.zw, fade_xyz.y);
    const float n_xyz = lerp(n_yz.x, n_yz.y, fade_xyz.x);
     return 1.46 * n_xyz;
 }

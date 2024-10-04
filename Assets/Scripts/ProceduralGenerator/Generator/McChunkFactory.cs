@@ -509,14 +509,14 @@ public class McChunkFactory: MonoBehaviour, IChunkFactory
     public void ProduceChunk(Vector3Int chunkCoord, Chunk.LODLevel lodLevel ,Material m_chunkMaterial = null, bool m_isForceUpdate = false)
     {
         SetDownSampler(downSampleCS,Chunk.lodDownSampleRateTable[lodLevel]);
-        ProduceChunk(Chunk.GetChunkOriginByCoord(chunkCoord), IChunkFactory.universalChunkSize, 
-            IChunkFactory.universalCellSize, m_chunkMaterial, m_isForceUpdate);
+        ProduceChunk(Chunk.GetChunkOriginByCoord(chunkCoord), Chunk.universalChunkSize, 
+            Chunk.universalCellSize, m_chunkMaterial, m_isForceUpdate);
     }
     
     public void ProduceChunk(Vector3Int chunkCoord, Material m_chunkMaterial = null, bool m_isForceUpdate = false)
     {
-        ProduceChunk(Chunk.GetChunkOriginByCoord(chunkCoord),IChunkFactory.universalChunkSize, 
-            IChunkFactory.universalCellSize, m_chunkMaterial, m_isForceUpdate);
+        ProduceChunk(Chunk.GetChunkOriginByCoord(chunkCoord),Chunk.universalChunkSize, 
+            Chunk.universalCellSize, m_chunkMaterial, m_isForceUpdate);
     }
     
     public void SetParameters(IScalerFieldGenerator m_scalerFieldGenerator)

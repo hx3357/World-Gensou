@@ -16,7 +16,7 @@ public class ChunkGroup : MonoBehaviour
    
    protected IChunkFactory chunkFactory;
    protected HashSet<Vector3Int> activeChunks = new HashSet<Vector3Int>();
-   protected int[] surroundBox;
+   protected SurroundBox surroundBox;
 
    protected PerlinNoise3D perlinNoise3D;
    
@@ -33,12 +33,12 @@ public class ChunkGroup : MonoBehaviour
    /// <param name="m_seed"></param>
    /// <param name="parameters">Parameters for scalar field generator</param>
    public virtual void Initialize(IChunkFactory m_chunkFactory,
-      int m_maxViewDistance,Material m_chunkMaterial,int[] m_surroundBox,int m_seed,params object[] parameters)
+      int m_maxViewDistance,Material m_chunkMaterial,SurroundBox m_surroundBox,int m_seed,params object[] parameters)
    {
       scalerFieldGenerator = m_chunkFactory.GetScalerFieldGenerator();
       chunkFactory = m_chunkFactory;
-      surroundBox = m_surroundBox is { Length: 6 } ? m_surroundBox : 
-         new []{int.MaxValue,int.MinValue,int.MaxValue,int.MinValue,int.MaxValue,int.MinValue};
+      surroundBox = m_surroundBox != null ? m_surroundBox : 
+         new SurroundBox(int.MinValue,int.MaxValue,int.MinValue,int.MaxValue,int.MinValue,int.MaxValue);
       maxViewDistance = m_maxViewDistance;
       chunkMaterial = m_chunkMaterial;
       scalerFieldParameters = parameters;
@@ -68,37 +68,25 @@ public class ChunkGroup : MonoBehaviour
             {
                Vector3Int chunkCoord = _playerChunkCoord + new Vector3Int(x,y,z);
                float distance = Vector3Int.Distance(chunkCoord,_playerChunkCoord);
-                 if(distance <= m_maxViewDistance&&ProcedualGeneratorUtility.isInSurroundBox(chunkCoord,surroundBox))
+               if(distance <= m_maxViewDistance&&surroundBox.IsInSurroundBox(chunkCoord))
+               {
+                  if(!activeChunks.Contains(chunkCoord))
                   {
-                     if(!activeChunks.Contains(chunkCoord))
-                     {
-                        preproducedChunks.Add(chunkCoord);
-                     }
+                     preproducedChunks.Add(chunkCoord);
                   }
-                  else
+               }
+               else
+               {
+                  if(activeChunks.Contains(chunkCoord))
                   {
-                     if(activeChunks.Contains(chunkCoord))
-                     {
-                        chunkFactory.DeleteChunk(chunkCoord);
-                        activeChunks.Remove(chunkCoord);
-                     }
+                     chunkFactory.DeleteChunk(chunkCoord);
+                     activeChunks.Remove(chunkCoord);
                   }
+               }
             }
       
       PrepareScalarFieldGeneratorParameters();
-
-      // foreach (var chunkCoord in preproducedChunks)
-      // {
-      //    chunkFactory.ProduceChunk(chunkCoord,chunkMaterial);
-      //    activeChunks.Add(chunkCoord);
-      // }
-      
-      AsyncLoadChunks(preproducedChunks);
-   }
-   
-   protected void AsyncLoadChunks(List<Vector3Int> chunkCoords)
-   {
-      StartCoroutine(AsyncLoadChunksCoroutine(chunkCoords));
+      StartCoroutine(AsyncLoadChunksCoroutine(preproducedChunks));
    }
    
    IEnumerator AsyncLoadChunksCoroutine(List<Vector3Int> chunkCoords)

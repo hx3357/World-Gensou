@@ -22,6 +22,7 @@ public class SDFIslandScalerFieldGenerator : GPUScalerFieldGenerator
    private static readonly int IsAirFlagBuffer = Shader.PropertyToID("isAirFlagBuffer");
    private static readonly int IslandPositions = Shader.PropertyToID("islandPositions");
    private static readonly int IslandCount = Shader.PropertyToID("islandCount");
+   private static readonly int IslandParameters = Shader.PropertyToID("islandParameters");
 
    public SDFIslandScalerFieldGenerator(ComputeShader m_cs,int m_seed,float m_isoLevel):base(m_cs)
    {
@@ -43,13 +44,6 @@ public class SDFIslandScalerFieldGenerator : GPUScalerFieldGenerator
       ComputeBuffer isAirFlagBuffer = new ComputeBuffer(1, sizeof(int));
       isAirFlagBuffer.SetData(new[]{1});
       buffers.Add(isAirFlagBuffer);
-      if(parameters is { Length: > 0 })
-      {
-         ComputeBuffer islandPositionBuffer = new ComputeBuffer(parameters.Length, sizeof(float) * 4);
-         Vector4[] _parameters = Array.ConvertAll(parameters, item => (Vector4)item);
-         islandPositionBuffer.SetData(_parameters);
-         buffers.Add(islandPositionBuffer);
-      }
    }
 
    protected override void GenerateRequest(ScalerFieldRequestData scalerFieldRequestData)
@@ -67,11 +61,23 @@ public class SDFIslandScalerFieldGenerator : GPUScalerFieldGenerator
    {
       m_cs.SetFloat(IsoLevel, isoLevel);
       m_cs.SetVector(RandomOffset, randomOffset);
-      m_cs.SetInt(IslandCount, parameters.Length);
+      if(parameters.Length>0 && parameters[0] is SDFIslandSFGParameter)
+      {
+         SDFIslandSFGParameter sfgParameter = (SDFIslandSFGParameter) parameters[0];
+         m_cs.SetInt(IslandCount, sfgParameter.islandPositions.Length);
+         m_cs.SetVectorArray(IslandPositions, sfgParameter.islandPositions);
+         m_cs.SetVectorArray(IslandParameters, sfgParameter.islandParameters);
+      }
+      else
+      {
+         m_cs.SetInt(IslandCount, 0);
+         m_cs.SetVectorArray(IslandPositions, null);
+         m_cs.SetVectorArray(IslandParameters, null);
+      }
+      
+      
       m_cs.SetBuffer(0, IsConcreteFlagBuffer, scalerFieldRequestData.buffers[1]);
       m_cs.SetBuffer(0, IsAirFlagBuffer, scalerFieldRequestData.buffers[2]);
-      if(parameters is { Length: > 0 })
-         m_cs.SetBuffer(0, IslandPositions, scalerFieldRequestData.buffers[3]);
    }
 
    public override (bool,Dot[],bool) GetState (ref ScalerFieldRequestData scalerFieldRequestData,bool isNotGetDotfield = false)

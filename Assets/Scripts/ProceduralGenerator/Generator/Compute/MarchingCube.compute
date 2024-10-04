@@ -4,7 +4,7 @@
 #include "Includes/MCTable.hlsl"
 #include "Includes/Utility.hlsl"
 #include "Includes/Dot.hlsl"
-#include "Includes/ImplColor.hlsl"
+#include "Includes\CustomColor.hlsl"
 
 static const int numofThreads = 8;
 
