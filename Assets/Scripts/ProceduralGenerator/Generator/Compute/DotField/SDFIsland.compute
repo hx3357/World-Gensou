@@ -29,7 +29,7 @@ RWStructuredBuffer<Dot> outputPoints;
 RWStructuredBuffer<int> isConcreteFlagBuffer;
 RWStructuredBuffer<int> isAirFlagBuffer;
 
-[numthreads(8,8,4)]
+[numthreads(8,8,8)]
 void CSMain (uint3 id : SV_DispatchThreadID)
 {
     if(id.x >= dotFieldSize.x || id.y >= dotFieldSize.y || id.z >= dotFieldSize.z)
@@ -47,6 +47,8 @@ void CSMain (uint3 id : SV_DispatchThreadID)
             islandParameters[i].y,
             WHITE));
     }
+    
+    //dot.w = ClassicNoise(0.001*pos);
     
     //dot = colored_union(dot, island_world(pos,int3(1,1,1)*100));
     

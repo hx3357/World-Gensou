@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System;
+using UnityEngine;
 
 public class IslandClusterGroup : ChunkGroup
 {
@@ -9,6 +10,11 @@ public class IslandClusterGroup : ChunkGroup
     }
 
     protected override void UpdateChunks(Vector3 playerPosition, float m_maxViewDistance)
+    {
+        
+    }
+
+    private void OnDrawGizmos()
     {
         
     }

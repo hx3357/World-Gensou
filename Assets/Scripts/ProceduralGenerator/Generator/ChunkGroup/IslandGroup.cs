@@ -65,8 +65,6 @@ public class IslandGroup : ChunkGroup
                 0);
         }
         
-        PrepareScalarFieldGeneratorParameters();
-        
         //Update the chunks of the island
         //Produce the new chunks
         foreach (var chunkCoord in newIslandCenters)
@@ -99,7 +97,7 @@ public class IslandGroup : ChunkGroup
         }
     }
     
-    void OnDrawGizmos()
+    protected virtual void OnDrawGizmos()
     {
         Gizmos.color = Color.red;
         foreach (var islandCenter in islandCenters)

@@ -28,7 +28,8 @@ public class PerlinNoiseScalerFieldGenerator3D : IScalerFieldGenerator
         
     }
     
-    public ScalerFieldRequestData StartGenerateDotField(Vector3 origin, Vector3Int dotfieldSize, Vector3 m_cellsize)
+    public ScalerFieldRequestData StartGenerateDotField(Vector3 origin, Vector3Int dotfieldSize, Vector3 m_cellsize,
+        object[] parameters = null)
     {
         bool isConcreteFlag = true,isAirFlag = true;
         dotField = new Dot[dotfieldSize.x*dotfieldSize.y*dotfieldSize.z];

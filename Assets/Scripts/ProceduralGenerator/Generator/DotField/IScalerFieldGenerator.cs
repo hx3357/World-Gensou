@@ -11,7 +11,8 @@ public interface IScalerFieldGenerator
     /// <param name="origin">The origin of the chunk</param>
     /// <param name="dotfieldSize"> Cell count of the chunk</param>
     /// <param name="cellsize">Single cell size</param>
-    public ScalerFieldRequestData StartGenerateDotField(Vector3 origin,Vector3Int dotfieldSize,Vector3 cellsize);
+    /// <param name="parameters"></param>
+    public ScalerFieldRequestData StartGenerateDotField(Vector3 origin,Vector3Int dotfieldSize,Vector3 cellsize,object[] parameters = null);
 
     /// <summary>
     /// Only call this before generating a batch of chunks

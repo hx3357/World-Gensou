@@ -57,11 +57,11 @@ public class SDFIslandScalerFieldGenerator : GPUScalerFieldGenerator
       requests.Add(isAirFlagBufferRequest);
    }
 
-   protected override void SetComputeShaderParameters(ComputeShader m_cs,ScalerFieldRequestData scalerFieldRequestData)
+   protected override void SetComputeShaderParameters(ComputeShader m_cs,ScalerFieldRequestData scalerFieldRequestData,object[] parameters)
    {
       m_cs.SetFloat(IsoLevel, isoLevel);
       m_cs.SetVector(RandomOffset, randomOffset);
-      if(parameters.Length>0 && parameters[0] is SDFIslandSFGParameter)
+      if(parameters is { Length: > 0 } && parameters[0] is SDFIslandSFGParameter)
       {
          SDFIslandSFGParameter sfgParameter = (SDFIslandSFGParameter) parameters[0];
          m_cs.SetInt(IslandCount, sfgParameter.islandPositions.Length);
@@ -75,7 +75,6 @@ public class SDFIslandScalerFieldGenerator : GPUScalerFieldGenerator
          m_cs.SetVectorArray(IslandParameters, null);
       }
       
-      
       m_cs.SetBuffer(0, IsConcreteFlagBuffer, scalerFieldRequestData.buffers[1]);
       m_cs.SetBuffer(0, IsAirFlagBuffer, scalerFieldRequestData.buffers[2]);
    }
@@ -86,20 +85,20 @@ public class SDFIslandScalerFieldGenerator : GPUScalerFieldGenerator
       AsyncGPUReadbackRequest isConcreteFlagBufferRequest =scalerFieldRequestData.requests[1];
       AsyncGPUReadbackRequest isAirFlagBufferRequest = scalerFieldRequestData.requests[2];
       Dot[] dotField = null;
-      scalerFieldRequestData.extraParameters ??= new(new Object[2]);
+      scalerFieldRequestData.resultStates ??= new(new Object[2]);
       scalerFieldRequestData.isDoneFlags ??= new bool[3];
       if (isConcreteFlagBufferRequest.done&&!scalerFieldRequestData.isDoneFlags[0])
       {
          int[] isConcreteFlag = new int[1];
          isConcreteFlagBufferRequest.GetData<int>().CopyTo(isConcreteFlag);
-         scalerFieldRequestData.extraParameters[0] = isConcreteFlag[0];
+         scalerFieldRequestData.resultStates[0] = isConcreteFlag[0];
          scalerFieldRequestData.isDoneFlags[0] = true;
       }
       if(isAirFlagBufferRequest.done&&!scalerFieldRequestData.isDoneFlags[1])
       {
          int[] isAirFlag = new int[1];
          isAirFlagBufferRequest.GetData<int>().CopyTo(isAirFlag);
-         scalerFieldRequestData.extraParameters[1] = isAirFlag[0];
+         scalerFieldRequestData.resultStates[1] = isAirFlag[0];
          scalerFieldRequestData.isDoneFlags[1] = true;
       }
       if(dotFieldRequest.done&&!scalerFieldRequestData.isDoneFlags[2])
@@ -116,7 +115,7 @@ public class SDFIslandScalerFieldGenerator : GPUScalerFieldGenerator
 
    protected override bool GetEmptyState(ScalerFieldRequestData scalerFieldRequestData)
    {
-      return (int)scalerFieldRequestData.extraParameters[0] == 1 || 
-             (int)scalerFieldRequestData.extraParameters[1] == 1;
+      return (int)scalerFieldRequestData.resultStates[0] == 1 || 
+             (int)scalerFieldRequestData.resultStates[1] == 1;
    }
 }

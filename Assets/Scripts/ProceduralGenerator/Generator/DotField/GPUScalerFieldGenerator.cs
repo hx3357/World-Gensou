@@ -4,12 +4,14 @@ using System.Collections.Generic;
 using Unity.Profiling;
 using UnityEngine;
 using UnityEngine.Rendering;
+using Object = UnityEngine.Object;
 
 public struct ScalerFieldRequestData
 {
     public AsyncGPUReadbackRequest[] requests;
     public ComputeBuffer[] buffers;
-    public List<object> extraParameters;
+    public object[] parameters;
+    public List<object> resultStates;
     public bool[] isDoneFlags;
 }
 
@@ -28,10 +30,7 @@ public class GPUScalerFieldGenerator : IScalerFieldGenerator
     private static readonly int CellSize = Shader.PropertyToID("cellSize");
     private static readonly int OutputPoints = Shader.PropertyToID("outputPoints");
     
-    private AsyncGPUReadbackRequest request;
     protected List<AsyncGPUReadbackRequest> requests = new List<AsyncGPUReadbackRequest>();
-    
-    protected object[] parameters;
 
     protected GPUScalerFieldGenerator(ComputeShader m_cs)
     {
@@ -58,25 +57,25 @@ public class GPUScalerFieldGenerator : IScalerFieldGenerator
 
     protected virtual void GenerateRequest(ScalerFieldRequestData scalerFieldRequestData)
     {
-        request = AsyncGPUReadback.Request(scalerFieldRequestData.buffers[0],
+        AsyncGPUReadbackRequest  request = AsyncGPUReadback.Request(scalerFieldRequestData.buffers[0],
             dotFieldSize.x*dotFieldSize.y*dotFieldSize.z*Dot.GetSize(),0);
         requests.Add(request);
     }
     
-    void RunNoiseComputeShader( ScalerFieldRequestData scalerFieldRequestData)
+    void RunNoiseComputeShader( ScalerFieldRequestData scalerFieldRequestData,object[] parameters)
     {
         int kernel = 0;
         cs.SetInts(DotFieldSize, dotFieldSize.x, dotFieldSize.y, dotFieldSize.z);
         cs.SetVector(Origin,  origin);
         cs.SetVector(CellSize, cellsize);
         cs.SetBuffer(kernel, OutputPoints, scalerFieldRequestData.buffers[0]);
-        SetComputeShaderParameters(cs,scalerFieldRequestData);
+        SetComputeShaderParameters(cs,scalerFieldRequestData,parameters);
         cs.Dispatch(kernel, Mathf.CeilToInt(dotFieldSize.x / 8.0f), 
             Mathf.CeilToInt(dotFieldSize.y / 8.0f), 
-            Mathf.CeilToInt(dotFieldSize.z / 4.0f));
+            Mathf.CeilToInt(dotFieldSize.z / 8.0f));
     }
     
-    protected virtual void SetComputeShaderParameters(ComputeShader m_cs,ScalerFieldRequestData scalerFieldRequestData){ }
+    protected virtual void SetComputeShaderParameters(ComputeShader m_cs,ScalerFieldRequestData scalerFieldRequestData,object[] parameters){ }
 
     protected virtual bool GetEmptyState(ScalerFieldRequestData scalerFieldRequestData)
     {
@@ -85,10 +84,10 @@ public class GPUScalerFieldGenerator : IScalerFieldGenerator
 
     public virtual void SetParameters(object[] m_parameters)
     {
-        parameters = m_parameters;
+       // parameters = m_parameters;
     }
 
-    public virtual ScalerFieldRequestData StartGenerateDotField(Vector3 m_origin,Vector3Int m_dotfieldSize, Vector3 m_cellsize)
+    public ScalerFieldRequestData StartGenerateDotField(Vector3 m_origin,Vector3Int m_dotfieldSize, Vector3 m_cellsize, object[] m_parameters = null)
     {
         origin = m_origin;
         dotFieldSize = m_dotfieldSize;
@@ -100,7 +99,7 @@ public class GPUScalerFieldGenerator : IScalerFieldGenerator
         InitBuffer();
         scalerFieldRequestData.buffers = buffers.ToArray();
         
-        RunNoiseComputeShader(scalerFieldRequestData);
+        RunNoiseComputeShader(scalerFieldRequestData,m_parameters);
         
         GenerateRequest(scalerFieldRequestData);
         scalerFieldRequestData.requests = requests.ToArray();

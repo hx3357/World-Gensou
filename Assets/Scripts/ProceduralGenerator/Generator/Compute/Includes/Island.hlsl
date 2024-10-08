@@ -47,9 +47,10 @@ float island_basic_shape_sdf(float3 pos, float3 origin, float baseRadius,float h
     queue[queueRear] = create_island_atom(origin, baseRadius, float3(0,0,0), 0);
     queueRear = (queueRear+1)%MAX_QUEUE_SIZE;
     queueSize++;
-    const int initialSpawnCount = 3;
     float sum = SDF_MAX;
     int iterateCount = 0;
+
+    //BFS
     while(queueSize>0 && iterateCount++ < 30)
     {
         IslandAtom atom = queue[queueHead];
@@ -86,7 +87,7 @@ float island_basic_shape_sdf(float3 pos, float3 origin, float baseRadius,float h
     sum = max(sum, -sdf_plane(pos, origin.y - 5* height));
 
     //Surface disformation
-    return sum + 5 * fractalNoise(0.03 * pos,5,2,0.5);
+    return sum + 10 * fractalNoise(0.035 * pos,5,2,0.5);
 }
 
 DotExpl island_basic_shape_sdf(float3 pos, int3 hash,float3 origin, float baseRadius,float height, float3 color)
@@ -95,7 +96,7 @@ DotExpl island_basic_shape_sdf(float3 pos, int3 hash,float3 origin, float baseRa
     float w = island_basic_shape_sdf(islandPos, origin, baseRadius, height);
     DotExpl result = create_dot_expl(w, WHITE*0.5);
     result = smooth_colored_intersection(result,
-        disform( sdf_plane(islandPos, height, GREEN), 10 * fractalNoise(0.01 * pos,3,2,0.5)),
+        disform( sdf_plane(islandPos, height, GREEN), 100 * fractalNoise(0.001 * pos,4,2.4,0.4)),
         0.2*baseRadius);
     return result;
 }

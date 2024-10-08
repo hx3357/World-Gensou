@@ -37,6 +37,8 @@ public class McChunkFactory: MonoBehaviour, IChunkFactory
 
     private Vector4[] dotField;
     
+    private object[] parameters;
+    
     private IScalerFieldGenerator scalerFieldGenerator;
     
     private float downSampleRate;
@@ -133,7 +135,7 @@ public class McChunkFactory: MonoBehaviour, IChunkFactory
         float _downSampleRate = downSampleRate;
         
         //Generate Dot Field
-        ScalerFieldRequestData requestData = scalerFieldGenerator.StartGenerateDotField(_origin, _dotFieldSize, _cellSize);
+        ScalerFieldRequestData requestData = scalerFieldGenerator.StartGenerateDotField(_origin, _dotFieldSize, _cellSize,parameters);
         Dot[] _dotField = null;
         bool isZeroFlag;
         while(true)
@@ -290,7 +292,7 @@ public class McChunkFactory: MonoBehaviour, IChunkFactory
         float _downSampleRate = downSampleRate;
         
         //Generate Dot Field
-        ScalerFieldRequestData requestData = scalerFieldGenerator.StartGenerateDotField(_origin, _dotFieldSize, _cellSize);
+        ScalerFieldRequestData requestData = scalerFieldGenerator.StartGenerateDotField(_origin, _dotFieldSize, _cellSize,parameters);
         bool isZeroFlag;
         
         while (true)
@@ -458,17 +460,17 @@ public class McChunkFactory: MonoBehaviour, IChunkFactory
     
     
     public void ProduceChunk(Vector3 m_origin, Vector3Int m_chunkSize, Vector3 m_cellSize,
-        Material m_chunkMaterial = null, bool m_isForceUpdate = false)
+        Material m_chunkMaterial = null, bool m_isForceUpdate = false, object[] m_parameters = null)
     {
         if(currentProducingChunkSet.Contains(m_origin))
         {
-            //Debug.Log("Chunk is already producing");
+            Debug.Log("Chunk is already producing");
             return;
         }
 
         if (!m_isForceUpdate && chunkDict.ContainsKey(m_origin))
         {
-            //Debug.LogWarning("Chunk already exists");
+            Debug.LogWarning("Chunk already exists");
             return;
         }
         if(Chunk.zombieChunkDict.TryGetValue(m_origin, out var chunk))
@@ -478,9 +480,10 @@ public class McChunkFactory: MonoBehaviour, IChunkFactory
             return;
         }
         origin = m_origin;
-        chunkSize =m_chunkSize;
+        chunkSize = m_chunkSize;
         cellSize = m_cellSize;
         originDotFieldSize = dotFieldSize = new Vector3Int(m_chunkSize.x + 1, m_chunkSize.y + 1, m_chunkSize.z + 1);
+        parameters = m_parameters;
         currentProducingChunkSet.Add(m_origin);
         StartCoroutine(ProduceChunkCoroutine(m_origin,m_chunkMaterial));
     }
@@ -513,10 +516,10 @@ public class McChunkFactory: MonoBehaviour, IChunkFactory
             Chunk.universalCellSize, m_chunkMaterial, m_isForceUpdate);
     }
     
-    public void ProduceChunk(Vector3Int chunkCoord, Material m_chunkMaterial = null, bool m_isForceUpdate = false)
+    public void ProduceChunk(Vector3Int chunkCoord, Material m_chunkMaterial = null, bool m_isForceUpdate = false, object[] parameters = null)
     {
         ProduceChunk(Chunk.GetChunkOriginByCoord(chunkCoord),Chunk.universalChunkSize, 
-            Chunk.universalCellSize, m_chunkMaterial, m_isForceUpdate);
+            Chunk.universalCellSize, m_chunkMaterial, m_isForceUpdate, parameters);
     }
     
     public void SetParameters(IScalerFieldGenerator m_scalerFieldGenerator)

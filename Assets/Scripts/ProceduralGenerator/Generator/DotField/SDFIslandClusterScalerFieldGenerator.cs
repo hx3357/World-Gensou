@@ -6,9 +6,5 @@ public class SDFIslandClusterScalerFieldGenerator:SDFIslandScalerFieldGenerator
     {
     }
 
-    protected override void SetComputeShaderParameters(ComputeShader m_cs, ScalerFieldRequestData scalerFieldRequestData)
-    {
-        base.SetComputeShaderParameters(m_cs, scalerFieldRequestData);
-        
-    }
+    
 }

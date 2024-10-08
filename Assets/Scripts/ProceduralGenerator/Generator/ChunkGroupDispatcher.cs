@@ -3,7 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class ChunkDispatcher : MonoBehaviour
+public class ChunkGroupDispatcher : MonoBehaviour
 {
    public Transform playerTransform;
    

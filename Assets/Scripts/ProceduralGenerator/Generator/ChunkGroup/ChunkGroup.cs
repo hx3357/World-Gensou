@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using Unity.VisualScripting;
 using UnityEngine;
+using UnityEngine.Assertions;
 
 public class ChunkGroup : MonoBehaviour
 {
@@ -15,7 +16,7 @@ public class ChunkGroup : MonoBehaviour
    protected object[] scalerFieldParameters;
    
    protected IChunkFactory chunkFactory;
-   protected HashSet<Vector3Int> activeChunks = new HashSet<Vector3Int>();
+   protected HashSet<Vector3Int> activeChunks {get; private set;} = new ();
    protected SurroundBox surroundBox;
 
    protected PerlinNoise3D perlinNoise3D;
@@ -47,15 +48,6 @@ public class ChunkGroup : MonoBehaviour
       perlinNoise3D.SetRandomSeed(seed);
    }
    
-   /// <summary>
-   /// Used to calculate parameters for the scalar field generator
-   /// </summary>
-   protected void PrepareScalarFieldGeneratorParameters()
-   {
-      if(scalerFieldParameters != null)
-         scalerFieldGenerator.SetParameters(scalerFieldParameters);
-   }
-   
    protected virtual void UpdateChunks(Vector3 playerPosition,float m_maxViewDistance)
    {
       Vector3Int _playerChunkCoord = Chunk.GetChunkCoordByPosition(playerPosition);
@@ -85,22 +77,37 @@ public class ChunkGroup : MonoBehaviour
                }
             }
       
-      PrepareScalarFieldGeneratorParameters();
       StartCoroutine(AsyncLoadChunksCoroutine(preproducedChunks));
    }
    
-   IEnumerator AsyncLoadChunksCoroutine(List<Vector3Int> chunkCoords)
+   /// <summary>
+   /// 
+   /// </summary>
+   /// <param name="chunksToBeProduced"></param>
+   /// <param name="m_parameters">A list contains chunk exclusive SFG paramaters if is not null</param>
+   /// <returns></returns>
+   IEnumerator AsyncLoadChunksCoroutine(List<Vector3Int> chunksToBeProduced, List<object> m_parameters = null)
    {
-      for(int i=0;i<chunkCoords.Count;)
+      if(m_parameters != null)
+         Assert.IsTrue(chunksToBeProduced.Count == m_parameters.Count,"Parameters count should be equal to chunks count");
+      
+      float startTime = Time.realtimeSinceStartup;
+      
+      for(int i=0;i<chunksToBeProduced.Count;)
       {
-         for(int j=0;j<chunksNumPerGenerate&&i<chunkCoords.Count;j++)
+         for(int j=0;j<chunksNumPerGenerate&&i<chunksToBeProduced.Count;j++)
          {
-            activeChunks.Add(chunkCoords[i]);
-            chunkFactory.ProduceChunk(chunkCoords[i++],chunkMaterial);
+            activeChunks.Add(chunksToBeProduced[i]);
+            chunkFactory.ProduceChunk(chunksToBeProduced[i++],m_chunkMaterial: chunkMaterial,
+               SFGParameters: m_parameters == null ? scalerFieldParameters : m_parameters.ToArray());
          }
          for(int j=0;j<chunksGenerationInterval;j++)
             yield return null;
       }
+      
+      float duration = Time.realtimeSinceStartup - startTime;
+      Debug.Log($"Generate {chunksToBeProduced.Count} chunks in {duration} seconds\n " +
+                $"Average: {duration/chunksToBeProduced.Count} seconds per chunk");
    }
 
    public void UpdateChunkGroup(Vector3 playerPosition)

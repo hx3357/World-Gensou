@@ -50,7 +50,7 @@ public class PerlinNoiseScalerFieldGenerator3D_GPU : GPUScalerFieldGenerator
       requests.Add(isAirFlagBufferRequest);
    }
 
-   protected override void SetComputeShaderParameters(ComputeShader m_cs,ScalerFieldRequestData scalerFieldRequestData)
+   protected override void SetComputeShaderParameters(ComputeShader m_cs,ScalerFieldRequestData scalerFieldRequestData,object[] parameters)
    {
       m_cs.SetFloat(Scale, scale);
       m_cs.SetFloat(IsoLevel, isoLevel);

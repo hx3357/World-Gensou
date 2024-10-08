@@ -2,8 +2,9 @@
 #define FRACTALNOISE_HLSL
 
 #include "noise.hlsl"
+#include "FastSnoise.hlsl"
 
-float fractalNoise(float3 pos,int ocatveCount,float lacunarity,float persistance)
+float fractalNoise(const float3 pos,int ocatveCount,float lacunarity,float persistance)
 {
     float sum = 0;
     float freq = 1;

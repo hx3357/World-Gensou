@@ -7,20 +7,7 @@ using UnityEngine;
 public interface IChunkFactory
 {
     
-    
-    public void ProduceChunk(Vector3 m_origin, Vector3Int m_chunkSize, Vector3 m_cellSize,
-        Material m_chunkMaterial = null, bool m_isForceUpdate = false);
-    
-    public void ProduceChunk(Vector3Int chunkCoord, Material m_chunkMaterial = null, bool m_isForceUpdate = false);
-    
-    /// <summary>
-    /// Produce chunk with LOD level
-    /// </summary>
-    /// <param name="chunkCoord">Chunk position in chunk coordination</param>
-    /// <param name="lodLevel">Target LOD level</param>
-    /// <param name="m_chunkMaterial">Chunk Material</param>
-    /// <returns></returns>
-    public void ProduceChunk(Vector3Int chunkCoord,Chunk.LODLevel lodLevel, Material m_chunkMaterial = null, bool m_isForceUpdate = false);
+    public void ProduceChunk(Vector3Int chunkCoord, Material m_chunkMaterial = null, bool m_isForceUpdate = false,object[] SFGParameters = null);
 
     public void DeleteChunk(Vector3Int m_coord);
     
