@@ -13,12 +13,13 @@ public class IslandGroup : ChunkGroup
     private HashSet<Vector3Int> islandCenters = new HashSet<Vector3Int>();
     
     public override void Initialize(IChunkFactory m_chunkFactory,
-        int m_maxViewDistance, Material m_chunkMaterial, SurroundBox m_surroundBox, int m_seed, params object[] parameters)
+        IChunkDispatcher chunkDispatcher,
+        int m_maxViewDistance, Material m_chunkMaterial, SurroundBox m_surroundBox, int m_seed,
+        params object[] parameters)
     {
         islandMaxRadius = (int)parameters[0];
         islandEmptiness = (float)parameters[1];
-        base.Initialize(m_chunkFactory, m_maxViewDistance, m_chunkMaterial, m_surroundBox,
-            m_seed, parameters);
+        base.Initialize(m_chunkFactory,chunkDispatcher ,m_maxViewDistance, m_chunkMaterial, m_surroundBox, m_seed, parameters);
     }
     protected override void UpdateChunks(Vector3 playerPosition, float m_maxViewDistance)
     {

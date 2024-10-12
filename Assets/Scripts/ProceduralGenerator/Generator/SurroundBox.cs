@@ -1,12 +1,22 @@
-﻿using UnityEngine;
+﻿using System;
+using UnityEngine;
 
-public class SurroundBox
+public class SurroundBox : IComparable<SurroundBox>
 {
     int[] surroundBox;
+    public Vector3 center;
+    public Vector3 size;
+    public float volume;
+    
+    public static readonly SurroundBox InfiniteSurroundBox = 
+        new SurroundBox(int.MinValue,int.MaxValue,int.MinValue,int.MaxValue,int.MinValue,int.MaxValue);
     
     public SurroundBox(Vector3 worldPosition,Vector3 worldSize)
     {
         surroundBox = GetSurroundBox(worldPosition,worldSize);
+        size = GetSize();
+        center = GetCenter();
+        volume = size.x * size.y * size.z;
     }
     
     public SurroundBox(int xMin,int xMax,int yMin,int yMax,int zMin,int zMax)
@@ -40,6 +50,12 @@ public class SurroundBox
                chunkCoord.y >= surroundBox[2] && chunkCoord.y <= surroundBox[3] &&
                chunkCoord.z >= surroundBox[4] && chunkCoord.z <= surroundBox[5];
     }
+    
+    public bool IsInSurroundBox(Vector3 worldPosition)
+    {
+        Vector3Int chunkCoord = Chunk.GetChunkCoordByPosition(worldPosition);
+        return IsInSurroundBox(chunkCoord);
+    }
 
     int[] GetSurroundBox(Vector3 worldPosition,Vector3 worldSize)
     {
@@ -59,5 +75,11 @@ public class SurroundBox
         Gizmos.color = Color.red;
         Gizmos.DrawWireCube(GetCenter(),GetSize());
     }
-   
+
+    public int CompareTo(SurroundBox other)
+    {
+        if(other == null)
+            return 1;
+        return volume.CompareTo(other.volume);
+    }
 }

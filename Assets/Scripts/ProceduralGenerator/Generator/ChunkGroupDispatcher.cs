@@ -106,16 +106,16 @@ public class ChunkGroupDispatcher : MonoBehaviour
       ChunkGroup chunkGroup0, chunkGroup1;
       
       chunkGroup0 = gameObject.AddComponent<IslandGroup>();
-      chunkGroup0.Initialize(chunkFactory0,maxViewDistance,chunkMaterial,
-         new SurroundBox(int.MinValue,int.MaxValue,int.MinValue,int.MaxValue,int.MinValue,int.MaxValue),seed,
-         2,22f);
+      chunkGroup0.Initialize(chunkFactory0,
+         new SphericalDispatcher(),maxViewDistance,chunkMaterial, new SurroundBox(int.MinValue,int.MaxValue,int.MinValue,int.MaxValue,int.MinValue,int.MaxValue), seed, 2, 22f);
       
       chunkGroup1 = gameObject.AddComponent<ChunkGroup>();
-      chunkGroup1.Initialize(chunkFactory0,maxViewDistance,chunkMaterial,
-         null,seed,new SDFIslandSFGParameter( 
-            new []{ new Vector4(300,100,100,0),new Vector4(-300,100,100,0)},
-            new []{new Vector4(100,100,100,0),new Vector4(100,100,100,0)}
-            ));
+      chunkGroup1.Initialize(chunkFactory0,
+         new VoxelBasedRandomPointDispatcher(new []{new VoxelMap(200),new VoxelMap(100)}, 100),
+         maxViewDistance, chunkMaterial, null, seed, new SDFIslandSFGParameter( 
+         new []{ new Vector4(300,100,100,0),new Vector4(-300,100,100,0)},
+         new []{new Vector4(100,100,100,0),new Vector4(100,100,100,0)}
+      ));
       //chunkGroups.Add(chunkGroup0);
       chunkGroups.Add(chunkGroup1);
    }

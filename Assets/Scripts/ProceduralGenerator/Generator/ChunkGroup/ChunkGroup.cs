@@ -12,6 +12,8 @@ public class ChunkGroup : MonoBehaviour
 
    private int seed;
    
+   private IChunkDispatcher chunkDispatcher;
+   
    private IScalerFieldGenerator scalerFieldGenerator;
    protected object[] scalerFieldParameters;
    
@@ -23,23 +25,27 @@ public class ChunkGroup : MonoBehaviour
    
    private int chunksNumPerGenerate = 50;
    private int chunksGenerationInterval = 1;
-   
+
    /// <summary>
    /// 
    /// </summary>
    /// <param name="m_chunkFactory"></param>
+   /// <param name="m_chunkDispatcher"></param>
    /// <param name="m_maxViewDistance"></param>
    /// <param name="m_chunkMaterial"></param>
    /// <param name="m_surroundBox"></param>
    /// <param name="m_seed"></param>
    /// <param name="parameters">Parameters for scalar field generator</param>
+   /// <param name="chunkDispatcher"></param>
    public virtual void Initialize(IChunkFactory m_chunkFactory,
-      int m_maxViewDistance,Material m_chunkMaterial,SurroundBox m_surroundBox,int m_seed,params object[] parameters)
+      IChunkDispatcher m_chunkDispatcher,
+      int m_maxViewDistance, Material m_chunkMaterial, SurroundBox m_surroundBox, int m_seed,
+      params object[] parameters)
    {
+      chunkDispatcher = m_chunkDispatcher;
       scalerFieldGenerator = m_chunkFactory.GetScalerFieldGenerator();
       chunkFactory = m_chunkFactory;
-      surroundBox = m_surroundBox != null ? m_surroundBox : 
-         new SurroundBox(int.MinValue,int.MaxValue,int.MinValue,int.MaxValue,int.MinValue,int.MaxValue);
+      surroundBox = m_surroundBox ?? SurroundBox.InfiniteSurroundBox;
       maxViewDistance = m_maxViewDistance;
       chunkMaterial = m_chunkMaterial;
       scalerFieldParameters = parameters;
@@ -50,34 +56,43 @@ public class ChunkGroup : MonoBehaviour
    
    protected virtual void UpdateChunks(Vector3 playerPosition,float m_maxViewDistance)
    {
-      Vector3Int _playerChunkCoord = Chunk.GetChunkCoordByPosition(playerPosition);
-      int celledMaxViewDistance = Mathf.CeilToInt(m_maxViewDistance)+1;
-      List<Vector3Int> preproducedChunks = new List<Vector3Int>();
+      // Vector3Int _playerChunkCoord = Chunk.GetChunkCoordByPosition(playerPosition);
+      // int celledMaxViewDistance = Mathf.CeilToInt(m_maxViewDistance)+1;
+      //
+      //
+      // for(int x = -celledMaxViewDistance;x<= celledMaxViewDistance;x++)
+      //    for(int y = -celledMaxViewDistance;y<= celledMaxViewDistance;y++)
+      //       for(int z = -celledMaxViewDistance;z<=celledMaxViewDistance;z++)
+      //       {
+      //          Vector3Int chunkCoord = _playerChunkCoord + new Vector3Int(x,y,z);
+      //          float distance = Vector3Int.Distance(chunkCoord,_playerChunkCoord);
+      //          if(distance <= m_maxViewDistance&&surroundBox.IsInSurroundBox(chunkCoord))
+      //          {
+      //             if(!activeChunks.Contains(chunkCoord))
+      //             {
+      //                preproducedChunks.Add(chunkCoord);
+      //             }
+      //          }
+      //          else
+      //          {
+      //             if(activeChunks.Contains(chunkCoord))
+      //             {
+      //                chunkFactory.DeleteChunk(chunkCoord);
+      //                activeChunks.Remove(chunkCoord);
+      //             }
+      //          }
+      //       }
       
-      for(int x = -celledMaxViewDistance;x<= celledMaxViewDistance;x++)
-         for(int y = -celledMaxViewDistance;y<= celledMaxViewDistance;y++)
-            for(int z = -celledMaxViewDistance;z<=celledMaxViewDistance;z++)
-            {
-               Vector3Int chunkCoord = _playerChunkCoord + new Vector3Int(x,y,z);
-               float distance = Vector3Int.Distance(chunkCoord,_playerChunkCoord);
-               if(distance <= m_maxViewDistance&&surroundBox.IsInSurroundBox(chunkCoord))
-               {
-                  if(!activeChunks.Contains(chunkCoord))
-                  {
-                     preproducedChunks.Add(chunkCoord);
-                  }
-               }
-               else
-               {
-                  if(activeChunks.Contains(chunkCoord))
-                  {
-                     chunkFactory.DeleteChunk(chunkCoord);
-                     activeChunks.Remove(chunkCoord);
-                  }
-               }
-            }
+      chunkDispatcher.DispatchChunks(surroundBox,activeChunks,playerPosition,m_maxViewDistance,
+         out List<Vector3Int> chunksToGenerate, out List<Vector3Int> chunksToDestroy, out List<object> chunkParameters);
+
+      foreach (var chunk in chunksToDestroy)
+      {
+         activeChunks.Remove(chunk);
+         chunkFactory.DeleteChunk(chunk);
+      }
       
-      StartCoroutine(AsyncLoadChunksCoroutine(preproducedChunks));
+      StartCoroutine(AsyncLoadChunksCoroutine(chunksToGenerate,chunkParameters));
    }
    
    /// <summary>
@@ -113,5 +128,10 @@ public class ChunkGroup : MonoBehaviour
    public void UpdateChunkGroup(Vector3 playerPosition)
    {
       UpdateChunks( playerPosition,maxViewDistance);
+   }
+
+   private void OnDrawGizmos()
+   {
+      chunkDispatcher.ShowDebugGizmos();
    }
 }

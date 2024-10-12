@@ -1,8 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
-using Unity.VisualScripting.Dependencies.Sqlite;
 using UnityEngine;
 
+/// <summary>
+/// Generate chunks in a spherical area around the player based on the max view distance
+/// Directly generate chunks in the spherical area and destroy chunks outside the spherical area
+/// </summary>
 public class SphericalDispatcher : IChunkDispatcher
 {
     public void DispatchChunks(SurroundBox chunkGroupSurroundBox,HashSet<Vector3Int> activeChunks, Vector3 playerPosition, float maxViewDistance, 
@@ -36,4 +39,6 @@ public class SphericalDispatcher : IChunkDispatcher
             }
         }
     }
+    
+    public void ShowDebugGizmos() { }
 }

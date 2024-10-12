@@ -12,6 +12,6 @@ public class DebugWhiteboard: MonoBehaviour
 
     private void OnDrawGizmos()
     {
-        surroundBox?.DrawSurroundBoxGizmo();
+       // surroundBox?.DrawSurroundBoxGizmo();
     }
 }

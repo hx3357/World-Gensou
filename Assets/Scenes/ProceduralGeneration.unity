@@ -1133,98 +1133,6 @@ MonoBehaviour:
     mipBias: 0
     varianceClampScale: 0.9
     contrastAdaptiveSharpening: 0
---- !u!1 &1227400312
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1227400314}
-  - component: {fileID: 1227400315}
-  m_Layer: 0
-  m_Name: GeneratorDebug
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 0
---- !u!4 &1227400314
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1227400312}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0.61134, y: 0.08873052, z: -5.2878113}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1227400315
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1227400312}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ed8d463ad418eff4e9baab9aab7a212b, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  marchingCubeCS: {fileID: 7200000, guid: 4bba0040eb28b7a41b5ca143899498f6, type: 3}
-  downSampleCS: {fileID: 7200000, guid: 5713efbca54cca3499c852a51d6bb888, type: 3}
-  chunkMaterial: {fileID: 2100000, guid: 8908da3cb4f92e448a332896de150c86, type: 2}
-  isoSurface: 0.5
-  lerpParam: 0
-  chunkSize: {x: 32, y: 32, z: 32}
-  cellSize: 1
-  ocatves: 4
-  scale: 40
-  offset: {x: 0, y: 0, z: 0}
-  persistance: 0.5
-  lacunarity: 2
-  seed: 1234
-  maxHeight: 80
-  heightMapping:
-    serializedVersion: 2
-    m_Curve:
-    - serializedVersion: 3
-      time: 0
-      value: 0
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0
-      outWeight: 0
-    - serializedVersion: 3
-      time: 1
-      value: 1
-      inSlope: 1.6049745
-      outSlope: 1.6049745
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0.053881228
-      outWeight: 0
-    m_PreInfinity: 2
-    m_PostInfinity: 2
-    m_RotationOrder: 4
-  heightOffset: 0.446
-  heightScale: 0.261
-  downSampleRate: 4
-  isDownSample: 1
-  isGPU: 1
-  lodLevel: 5
-  isRealtimeUpdate: 0
-  isUpdateInTestCoroutine: 0
-  isShowDotFieldGizmos: 0
-  isUseV2Generator: 1
 --- !u!1 &1300186600
 GameObject:
   m_ObjectHideFlags: 0
@@ -1599,7 +1507,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   playerTransform: {fileID: 614957189}
-  maxViewDistance: 12
+  maxViewDistance: 32
   chunkSize: 31
   cellSize: 4
   chunkMaterial: {fileID: 2100000, guid: 8908da3cb4f92e448a332896de150c86, type: 2}
@@ -1663,7 +1571,6 @@ SceneRoots:
   m_Roots:
   - {fileID: 1122581983}
   - {fileID: 1448474072}
-  - {fileID: 1227400314}
   - {fileID: 692332058}
   - {fileID: 614957189}
   - {fileID: 819248383}
