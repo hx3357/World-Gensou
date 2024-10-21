@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using ChunkDispatchers.VoxelBasedDispatch;
 using UnityEngine;
 
 public class ChunkGroupDispatcher : MonoBehaviour
@@ -105,13 +106,18 @@ public class ChunkGroupDispatcher : MonoBehaviour
 
       ChunkGroup chunkGroup0, chunkGroup1;
       
-      chunkGroup0 = gameObject.AddComponent<IslandGroup>();
+      chunkGroup0 = gameObject.AddComponent<ChunkGroup>();
       chunkGroup0.Initialize(chunkFactory0,
-         new SphericalDispatcher(),maxViewDistance,chunkMaterial, new SurroundBox(int.MinValue,int.MaxValue,int.MinValue,int.MaxValue,int.MinValue,int.MaxValue), seed, 2, 22f);
+         new SphericalDispatcher(),maxViewDistance,chunkMaterial,
+         SurroundBox.InfiniteSurroundBox, seed, new SDFIslandSFGParameter( 
+            new []{ new Vector4(300,200,100,0),new Vector4(-100,100,100,0)},
+            new []{new Vector4(100,500,100,0),new Vector4(100,500,100,0)}
+         ));
       
       chunkGroup1 = gameObject.AddComponent<ChunkGroup>();
       chunkGroup1.Initialize(chunkFactory0,
-         new VoxelBasedRandomPointDispatcher(new []{new VoxelMap(200),new VoxelMap(100)}, 100),
+         new VoxelBasedRandomPointDispatcher(new []{new VoxelMap(10000)}, 
+            100,0.5f),
          maxViewDistance, chunkMaterial, null, seed, new SDFIslandSFGParameter( 
          new []{ new Vector4(300,100,100,0),new Vector4(-300,100,100,0)},
          new []{new Vector4(100,100,100,0),new Vector4(100,100,100,0)}

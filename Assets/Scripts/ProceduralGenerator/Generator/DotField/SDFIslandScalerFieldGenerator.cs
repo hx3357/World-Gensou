@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using Unity.Profiling;
 using UnityEngine;
+using UnityEngine.Assertions;
 using UnityEngine.Rendering;
 using Object = System.Object;
 
@@ -61,9 +62,15 @@ public class SDFIslandScalerFieldGenerator : GPUScalerFieldGenerator
    {
       m_cs.SetFloat(IsoLevel, isoLevel);
       m_cs.SetVector(RandomOffset, randomOffset);
-      if(parameters is { Length: > 0 } && parameters[0] is SDFIslandSFGParameter)
+      if(parameters is { Length: > 0 } )
       {
-         SDFIslandSFGParameter sfgParameter = (SDFIslandSFGParameter) parameters[0];
+         SDFIslandSFGParameter sfgParameter = new SDFIslandSFGParameter();
+         foreach (var parameter in parameters)
+         {
+            Assert.IsTrue(parameter is SDFIslandSFGParameter, 
+               "SDFIslandScalerFieldGenerator parameters only accept SDFIslandSFGParameter");
+            sfgParameter.Merge((SDFIslandSFGParameter)parameter);
+         }
          m_cs.SetInt(IslandCount, sfgParameter.islandPositions.Length);
          m_cs.SetVectorArray(IslandPositions, sfgParameter.islandPositions);
          m_cs.SetVectorArray(IslandParameters, sfgParameter.islandParameters);

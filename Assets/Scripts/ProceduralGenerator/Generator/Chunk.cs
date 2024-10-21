@@ -125,6 +125,16 @@ public class Chunk : MonoBehaviour
             universalChunkSize.z * universalCellSize.z);
     }
     
+    public static void DrawChunkGizmo(Vector3Int coord)
+    {
+        Vector3 origin = GetChunkOriginByCoord(coord);
+        Vector3 volumeSize = 
+            new Vector3((universalChunkSize.x) * universalCellSize.x, 
+                (universalChunkSize.y) * universalCellSize.y, 
+                (universalChunkSize.z) * universalCellSize.z);
+        Gizmos.DrawWireCube(origin + volumeSize/2, volumeSize);
+    }
+    
     #endregion
     
     public void SetMesh(Mesh m_mesh)

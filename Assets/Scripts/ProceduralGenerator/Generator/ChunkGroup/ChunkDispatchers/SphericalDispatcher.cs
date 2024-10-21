@@ -8,7 +8,8 @@ using UnityEngine;
 /// </summary>
 public class SphericalDispatcher : IChunkDispatcher
 {
-    public void DispatchChunks(SurroundBox chunkGroupSurroundBox,HashSet<Vector3Int> activeChunks, Vector3 playerPosition, float maxViewDistance, 
+    public void DispatchChunks(SurroundBox chunkGroupSurroundBox,HashSet<Vector3Int> activeChunks,
+        Vector3 playerPosition, float maxViewDistance, 
         out List<Vector3Int> chunksToGenerate, out List<Vector3Int> chunksToDestroy, out List<object> chunkParameters)
     {
         Vector3Int _playerChunkCoord = Chunk.GetChunkCoordByPosition(playerPosition);

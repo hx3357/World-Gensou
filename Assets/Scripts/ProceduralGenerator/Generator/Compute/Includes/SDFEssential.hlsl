@@ -3,7 +3,7 @@
 #include "..\Noise\fractalNoise.hlsl"
 
 #define FLT_MAX 3.402823466e+38
-#define SDF_MAX 100.
+#define SDF_MAX 1000.
 #define PI 3.14159265
 
 //SDF operations

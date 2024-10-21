@@ -336,19 +336,21 @@ public class McChunkFactory: MonoBehaviour, IChunkFactory
         AsyncGPUReadbackRequest tribuffercountRequest = AsyncGPUReadback.Request(triangleCountBuffer,  sizeof(int),0);
         
         int[] count = new int[1];
-        NativeArray<Triangle> rawTriangles = new();
+        NativeArray<Triangle> rawTriangles = new NativeArray<Triangle>(5*_dotFieldSize.x*_dotFieldSize.y*_dotFieldSize.z, Allocator.Persistent);
         bool isRawTriangleReady = false,isCountReady = false;
+        bool isError = false;
         
         while (!tribufferRequest.done||!tribuffercountRequest.done)
         {
             if(tribufferRequest.hasError||tribuffercountRequest.hasError)
             {
                 Debug.LogError("GPU Readback Error");
+                isError = true;
             }
             
             if (tribufferRequest.done&&!isRawTriangleReady)
             {
-                rawTriangles = tribufferRequest.GetData<Triangle>();
+                tribufferRequest.GetData<Triangle>().CopyTo(rawTriangles);
                 isRawTriangleReady = true;
             }
             
@@ -368,16 +370,17 @@ public class McChunkFactory: MonoBehaviour, IChunkFactory
         
         if (!isRawTriangleReady)
         {
-            rawTriangles = tribufferRequest.GetData<Triangle>();
+            tribufferRequest.GetData<Triangle>().CopyTo(rawTriangles);
         }
         
         int triangleCount = count[0];
         Triangle[] _triangles = new Triangle[triangleCount];
         try
         {
-            //Probably because of the life cycle of the requested data, the native array may have been disposed
-            //Simply starting over to reproduce the chunk is the most elegant way so far
             rawTriangles.Slice(0, triangleCount).CopyTo(_triangles);
+
+            if (isError)
+                throw new Exception("GPU Readback Error");
         }
         catch (Exception e)
         {
@@ -386,8 +389,9 @@ public class McChunkFactory: MonoBehaviour, IChunkFactory
             pointBuffer.Release();
             triangleBuffer.Release();
             triangleCountBuffer.Release();
-            currentProducingChunkSet.Remove(_origin);
-            ProduceChunk(_origin, _chunkSize, _cellSize, m_chunkMaterial);
+            //currentProducingChunkSet.Remove(_origin);
+            //ProduceChunk(_origin, _chunkSize, _cellSize, m_chunkMaterial);
+            StartCoroutine(ProduceChunkCoroutine(m_origin,m_chunkMaterial));
             yield break;
         }
         
@@ -464,7 +468,7 @@ public class McChunkFactory: MonoBehaviour, IChunkFactory
     {
         if(currentProducingChunkSet.Contains(m_origin))
         {
-            Debug.Log("Chunk is already producing");
+            //Debug.Log("Chunk is already producing");
             return;
         }
 

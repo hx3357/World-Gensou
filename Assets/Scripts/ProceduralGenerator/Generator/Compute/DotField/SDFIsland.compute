@@ -37,20 +37,19 @@ void CSMain (uint3 id : SV_DispatchThreadID)
     
     const float3 pos = id * cellSize+origin;
     DotExpl dot = INIT_DOT_EXPL;
-    
+
+    [unroll]
     for (int i=0;i<islandCount;i++)
     {
-        dot = colored_union(dot, island_basic_shape_sdf(pos,
+        dot = smooth_colored_union(dot, island_basic_shape_sdf(pos,
             islandPositions[i].xyz,
             islandPositions[i].xyz,
-            islandParameters[i].x,
+            islandParameters[i].x/2,
             islandParameters[i].y,
-            WHITE));
+            WHITE*0.5,
+            islandParameters[i].x),
+            50);
     }
-    
-    //dot.w = ClassicNoise(0.001*pos);
-    
-    //dot = colored_union(dot, island_world(pos,int3(1,1,1)*100));
     
     dot.w = sdf_linear_normalize(dot.w, isoLevel);
     outputPoints[get_point_index(id, dotFieldSize)] = convert_dot_expl_to_dot(dot);

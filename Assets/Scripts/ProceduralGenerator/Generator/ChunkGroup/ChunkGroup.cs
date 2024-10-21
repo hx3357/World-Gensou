@@ -56,34 +56,10 @@ public class ChunkGroup : MonoBehaviour
    
    protected virtual void UpdateChunks(Vector3 playerPosition,float m_maxViewDistance)
    {
-      // Vector3Int _playerChunkCoord = Chunk.GetChunkCoordByPosition(playerPosition);
-      // int celledMaxViewDistance = Mathf.CeilToInt(m_maxViewDistance)+1;
-      //
-      //
-      // for(int x = -celledMaxViewDistance;x<= celledMaxViewDistance;x++)
-      //    for(int y = -celledMaxViewDistance;y<= celledMaxViewDistance;y++)
-      //       for(int z = -celledMaxViewDistance;z<=celledMaxViewDistance;z++)
-      //       {
-      //          Vector3Int chunkCoord = _playerChunkCoord + new Vector3Int(x,y,z);
-      //          float distance = Vector3Int.Distance(chunkCoord,_playerChunkCoord);
-      //          if(distance <= m_maxViewDistance&&surroundBox.IsInSurroundBox(chunkCoord))
-      //          {
-      //             if(!activeChunks.Contains(chunkCoord))
-      //             {
-      //                preproducedChunks.Add(chunkCoord);
-      //             }
-      //          }
-      //          else
-      //          {
-      //             if(activeChunks.Contains(chunkCoord))
-      //             {
-      //                chunkFactory.DeleteChunk(chunkCoord);
-      //                activeChunks.Remove(chunkCoord);
-      //             }
-      //          }
-      //       }
+      if(chunkDispatcher == null)
+         return;
       
-      chunkDispatcher.DispatchChunks(surroundBox,activeChunks,playerPosition,m_maxViewDistance,
+      chunkDispatcher.DispatchChunks(surroundBox,activeChunks, playerPosition,m_maxViewDistance,
          out List<Vector3Int> chunksToGenerate, out List<Vector3Int> chunksToDestroy, out List<object> chunkParameters);
 
       foreach (var chunk in chunksToDestroy)
@@ -99,7 +75,9 @@ public class ChunkGroup : MonoBehaviour
    /// 
    /// </summary>
    /// <param name="chunksToBeProduced"></param>
-   /// <param name="m_parameters">A list contains chunk exclusive SFG paramaters if is not null</param>
+   /// <param name="m_parameters">A list contains chunk exclusive SFG paramaters if is not null. 
+   /// When this parameter is null, the scaler field generator will use the initial parameters
+   /// </param>
    /// <returns></returns>
    IEnumerator AsyncLoadChunksCoroutine(List<Vector3Int> chunksToBeProduced, List<object> m_parameters = null)
    {
@@ -113,8 +91,8 @@ public class ChunkGroup : MonoBehaviour
          for(int j=0;j<chunksNumPerGenerate&&i<chunksToBeProduced.Count;j++)
          {
             activeChunks.Add(chunksToBeProduced[i]);
-            chunkFactory.ProduceChunk(chunksToBeProduced[i++],m_chunkMaterial: chunkMaterial,
-               SFGParameters: m_parameters == null ? scalerFieldParameters : m_parameters.ToArray());
+            chunkFactory.ProduceChunk(chunksToBeProduced[i],m_chunkMaterial: chunkMaterial,
+               SFGParameters: m_parameters == null ? scalerFieldParameters :new []{ m_parameters[i++]},m_isForceUpdate:true);
          }
          for(int j=0;j<chunksGenerationInterval;j++)
             yield return null;

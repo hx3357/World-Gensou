@@ -25,6 +25,9 @@ uint3 pcg3d(uint3 v)
 }
 
 // Hash function from H. Schechter & R. Bridson, goo.gl/RXiKaH
+
+#define USE_HR_HASH 0
+
 uint HRHash(uint s)
 {
     s ^= 2747636419u;
@@ -43,10 +46,14 @@ float HRHashf(uint s)
 
 float simple_hash(float3 vec)
 {
+    #if USE_HR_HASH == 1
+    return HRHashf(dot(asuint(vec), 2747636419u));
+    #else
     float3 smallValue = sin(vec);
     float random = dot(smallValue, float3(12.9898, 78.233, 37.719));
     random = frac(sin(random) * 143758.5453);
     return random;
+    #endif
 }
 
 #endif
