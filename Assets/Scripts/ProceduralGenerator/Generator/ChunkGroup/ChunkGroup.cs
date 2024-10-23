@@ -23,8 +23,16 @@ public class ChunkGroup : MonoBehaviour
 
    protected PerlinNoise3D perlinNoise3D;
    
-   private int chunksNumPerGenerate = 50;
-   private int chunksGenerationInterval = 1;
+   private int firstTimeChunksNumPerGenerate = 50;
+   private int firstTimeChunksGenerationInterval = 1;
+   
+   private int gameplayChunksNumPerGenerate = 10;
+   private int gameplayChunksGenerationInterval = 2;
+
+   private int chunksNumPerGenerate => isFirstTime ? firstTimeChunksNumPerGenerate : gameplayChunksNumPerGenerate;
+   private int chunksGenerationInterval => isFirstTime ? firstTimeChunksGenerationInterval : gameplayChunksGenerationInterval;
+   
+   private bool isFirstTime = true;
 
    /// <summary>
    /// 
@@ -61,6 +69,8 @@ public class ChunkGroup : MonoBehaviour
       
       chunkDispatcher.DispatchChunks(surroundBox,activeChunks, playerPosition,m_maxViewDistance,
          out List<Vector3Int> chunksToGenerate, out List<Vector3Int> chunksToDestroy, out List<object> chunkParameters);
+
+      
 
       foreach (var chunk in chunksToDestroy)
       {
@@ -101,6 +111,10 @@ public class ChunkGroup : MonoBehaviour
       float duration = Time.realtimeSinceStartup - startTime;
       Debug.Log($"Generate {chunksToBeProduced.Count} chunks in {duration} seconds\n " +
                 $"Average: {duration/chunksToBeProduced.Count} seconds per chunk");
+      if (isFirstTime)
+      {
+         isFirstTime = false;
+      }
    }
 
    public void UpdateChunkGroup(Vector3 playerPosition)

@@ -11,6 +11,12 @@
 #define BLACK float3(0,0,0)
 #define GRAY float3(0.5,0.5,0.5)
 
+#define GRASS float3(0.2,0.8,0.2)
+#define SAND float3(0.8,0.8,0.2)
+#define WATER float3(0.2,0.2,0.8)
+#define ROCK float3(0.5,0.5,0.5)
+#define SNOW float3(1,1,1)
+
 int get_impl_color(float3 color)
 {
     return int(clamp(color.x*255,0,255))& 0xFF | (int(clamp(color.y*255,0,255))& 0xFF) << 8 | (int(clamp(color.z*255,0,255))& 0xFF) << 16;

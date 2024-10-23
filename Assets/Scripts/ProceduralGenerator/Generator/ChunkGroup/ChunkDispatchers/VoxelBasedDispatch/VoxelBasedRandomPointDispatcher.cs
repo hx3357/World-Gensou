@@ -10,34 +10,41 @@ namespace ChunkDispatchers.VoxelBasedDispatch
 {
     public class ChunkParameter
     {
-        private readonly List<Vector3> voxelPositions = new();
-        private List<float> voxelSize = new();
-        private List<int> islandType = new();
+        private List<Voxel> voxels = new();
 
-        public void Add(Vector3 position, float size, int m_islandType)
+        public void Add(Voxel voxel)
         {
-            voxelPositions.Add(position);
-            voxelSize.Add(size);
-            islandType.Add(m_islandType);
+            voxels.Add(voxel);
         }
 
 
         public void Merge(ChunkParameter chunkParameter)
         {
-            voxelPositions.AddRange(chunkParameter.voxelPositions);
-            voxelSize.AddRange(chunkParameter.voxelSize);
-            islandType.AddRange(chunkParameter.islandType);
+            voxels.AddRange(chunkParameter.voxels);
         }
 
-        public SDFIslandSFGParameter ToIslandSFGParameter()
+        public SDFIslandSFGParameter ToIslandSFGParameter(float lakePossibility = 0.6f)
         {
-            Vector4[] islandPositions = new Vector4[voxelPositions.Count];
-            Vector4[] islandParameters = new Vector4[voxelPositions.Count];
-            for (int i = 0; i < voxelPositions.Count; i++)
+            Vector4[] islandPositions = new Vector4[voxels.Count];
+            Vector4[] islandParameters = new Vector4[voxels.Count];
+            for (int i = 0; i < voxels.Count; i++)
             {
-                islandPositions[i] = new Vector4(voxelPositions[i].x, voxelPositions[i].y, voxelPositions[i].z,
-                    islandType[i]);
-                islandParameters[i] = new Vector4(voxelSize[i] / 2, voxelSize[i] , 0, 0);
+                Voxel currentVoxel = voxels[i];
+                int voxelType = 0;
+                
+                if (currentVoxel.isRoot && Mathf.Abs(currentVoxel.center.GetHashCode() % 10000 / 10000f) < lakePossibility)
+                {
+                    // Generate lake island
+                    voxelType = 2;
+                }
+                else if(!currentVoxel.isRoot)
+                {
+                    voxelType = ((currentVoxel.voxelIndice & 3) >> 2) != 1 ? 1 : voxelType;
+                }
+                
+                islandPositions[i] = new Vector4(currentVoxel.center.x, currentVoxel.center.y, currentVoxel.center.z,
+                    voxelType);
+                islandParameters[i] = new Vector4(currentVoxel.worldSize / 2, currentVoxel.worldSize , 0, 0);
             }
 
             return new SDFIslandSFGParameter(islandPositions, islandParameters);
@@ -165,21 +172,23 @@ namespace ChunkDispatchers.VoxelBasedDispatch
 
         public void ShowDebugGizmos()
         {
-            if (!IChunkDispatcher.isDebug)
+            if (!DebugWhiteboard.Instance.isDebugChunkDispatcher)
                 return;
             foreach (var voxel in baseVoxelDictionary)
             {
                 //voxel.Value.DrawLeafGizmos();
-                // if(voxel.Value.CalculateChunkCoords()!=null)
-                //     foreach (var kvPair in voxel.Value.CalculateChunkCoords())
-                //     {
-                //         Chunk.DrawChunkGizmo(kvPair.Key);
-                //         // for(int i = 0; i < kvPair.Value.voxelPositions.Count; i++)
-                //         // {
-                //         //     Gizmos.color = Color.green;
-                //         //     Gizmos.DrawCube(kvPair.Value.voxelPositions[i],Vector3.one*kvPair.Value.voxelSize[i]);
-                //         // }
-                //     }
+                if(voxel.Value.CalculateChunkCoords()!=null)
+                    foreach (var kvPair in voxel.Value.CalculateChunkCoords())
+                    {
+                        Vector3 hash = HashUtility.Get3DHash(voxel.Key);
+                        Gizmos.color = new Color(hash.x, hash.y, hash.z, 1f);
+                        Chunk.DrawChunkGizmo(kvPair.Key);
+                        // for(int i = 0; i < kvPair.Value.voxelPositions.Count; i++)
+                        // {
+                        //     Gizmos.color = Color.green;
+                        //     Gizmos.DrawCube(kvPair.Value.voxelPositions[i],Vector3.one*kvPair.Value.voxelSize[i]);
+                        // }
+                    }
                 // foreach (var coord in voxel.Value.GetChunkCoords())
                 // {
                 //     Vector3 hash = HashUtility.Get3DHash(voxel.Key);

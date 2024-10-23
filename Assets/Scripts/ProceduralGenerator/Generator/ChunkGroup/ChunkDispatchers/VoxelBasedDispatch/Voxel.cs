@@ -8,11 +8,11 @@ namespace ChunkDispatchers.VoxelBasedDispatch
     public class Voxel
     {
         
-        readonly Vector3 worldOrigin;
+        public Vector3 worldOrigin;
         // Chunk count
-        private readonly int size;
-        readonly float worldSize;
-        readonly Vector3 center;
+         readonly int size;
+        public readonly float worldSize;
+        public readonly Vector3 center;
     
         //The number of sampled dots in the voxel
         public int dotCount{ get; private set;}
@@ -24,33 +24,32 @@ namespace ChunkDispatchers.VoxelBasedDispatch
         
         bool isGenerate = false;
 
-        private int voxelIndice;
-        private int voxelType;
+        public int voxelIndice;
         
-        bool isLeaf => childVoxels == null && isGenerate;
-        private bool isRoot;
+        public bool isLeaf => childVoxels == null && isGenerate;
+        public bool isRoot;
         
         public Dictionary<Vector3Int,ChunkParameter> cachedChunkCoordMap;
 
         private readonly float subVoxelExpandFactor;
         
-        public Voxel(Vector3 m_worldOrigin, float m_worldSize,int m_dotCountExpection, bool isRoot,
-            int depth = 0,float initDotExp = 1f,int indice = 0,
-            float mainVoxelshrinkFactor = 0.9f,float p_MainVoxel=0.6f, float _subVoxelExpandFactor = 0.5f,float lake_P = 0.4f)
+        public Voxel(Vector3 m_worldOrigin, float m_worldSize,int m_dotCountExpection, bool m_isRoot,
+            int depth = 0,float initDotExp = 1f,
+            float mainVoxelshrinkFactor = 0.7f,float p_MainVoxel=0.6f, float _subVoxelExpandFactor = 0f)
         {
             size = Mathf.RoundToInt(m_worldSize/Chunk.GetWorldSize()[0]);
             worldOrigin = m_worldOrigin;
             worldSize = m_worldSize ;
             center = m_worldOrigin + worldSize / 2 * Vector3.one;
-            voxelIndice = indice;
+            isRoot = m_isRoot;
             subVoxelExpandFactor = _subVoxelExpandFactor;
             
-            dotCount = isRoot ? PoissonSampler.GetPoissonSampleCount(initDotExp, center) : 
+            dotCount = m_isRoot ? PoissonSampler.GetPoissonSampleCount(initDotExp, center) : 
                 m_dotCountExpection;
             
             if (dotCount > 1)
             {
-                Spilt(depth,dotCount+1);
+                Spilt(depth,dotCount);
             }
             else if (dotCount == 1)
             {
@@ -59,14 +58,8 @@ namespace ChunkDispatchers.VoxelBasedDispatch
                 else
                 {
                     isGenerate = true;
-                    if (isRoot)
+                    if (m_isRoot)
                     {
-                        if (Mathf.Abs(m_worldOrigin.GetHashCode() % 10000 / 10000f) < lake_P)
-                        {
-                            // Generate lake island
-                            voxelType = 2;
-                            
-                        }
                         worldOrigin += HashUtility.Get3DHash(worldOrigin) * (worldSize * (1-mainVoxelshrinkFactor));
                         worldSize *= mainVoxelshrinkFactor;
                         center = worldOrigin + worldSize / 2 * Vector3.one;
@@ -164,10 +157,10 @@ namespace ChunkDispatchers.VoxelBasedDispatch
                     finalOrigin += (worldOrigin - finalOrigin).normalized * ((finalSize - worldSize/2)/2 * 1.42f * 1.2f);
                     
                     childVoxels[i] = new Voxel(finalOrigin, finalSize, subVoxelDotCountList[i],
-                        false,curDepth+1,indice:i)
+                        false,curDepth+1)
                         {
                             fatherVoxel = this,
-                            voxelType = ((i & 3) >> 2) == 1 ? 0 : 1
+                            voxelIndice = i
                         };
                 }
                 
@@ -198,7 +191,7 @@ namespace ChunkDispatchers.VoxelBasedDispatch
                 foreach (var chunkCoord in chunkCoords)
                 {
                     chunkCoordMap.TryAdd(chunkCoord, new ChunkParameter());
-                    chunkCoordMap[chunkCoord].Add(center,worldSize,voxelType);
+                    chunkCoordMap[chunkCoord].Add(this);
                 }
                 return chunkCoordMap;
             }

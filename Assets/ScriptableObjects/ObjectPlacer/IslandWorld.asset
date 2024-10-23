@@ -12,4 +12,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: cd7d2701db274385bf9dd10d51ae2027, type: 3}
   m_Name: IslandWorld
   m_EditorClassIdentifier: 
-  placeableObjects: []
+  placeableObjects:
+  - objectName: Lake
+    gameObjectLOD:
+    - {fileID: 7420397023563812191, guid: 9e09d083ba97fdd46a3261a9708c3f93, type: 3}
+    - {fileID: 3522583196715597236, guid: 4bc979ded31c10e4599cb336019ee5f3, type: 3}
+    viewDistance:
+    - 500
+    - 800

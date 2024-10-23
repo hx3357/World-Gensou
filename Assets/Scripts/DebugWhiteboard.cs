@@ -1,9 +1,12 @@
 ﻿using System;
 using UnityEngine;
 
-public class DebugWhiteboard: MonoBehaviour
+public class DebugWhiteboard: MonoSingleton<DebugWhiteboard>
 {
     private SurroundBox surroundBox;
+    
+    public bool isDebugChunkDispatcher = false;
+    
     private void Start()
     {
         surroundBox = new SurroundBox(new Vector3(0,0,0),
