@@ -12,6 +12,11 @@ namespace ChunkDispatchers.VoxelBasedDispatch
             this.voxelSize = voxelSize;
             this.offset = offset;
         }
+        
+        public VoxelMap(int voxelChunkSize)
+        {
+            this.voxelSize = voxelChunkSize * Chunk.GetWorldSize()[0];
+        }
     
         public Vector3 GetVoxelOriginByCoord(Vector3Int m_coord) => new Vector3(m_coord.x*voxelSize,
             m_coord.y*voxelSize, 

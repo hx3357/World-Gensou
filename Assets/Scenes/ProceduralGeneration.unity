@@ -1056,7 +1056,7 @@ Camera:
     width: 1
     height: 1
   near clip plane: 0.3
-  far clip plane: 1000
+  far clip plane: 5000
   field of view: 60
   orthographic: 0
   orthographic size: 5
@@ -1508,7 +1508,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   playerTransform: {fileID: 614957189}
-  maxViewDistance: 32
+  maxViewDistance: 24
   chunkSize: 15
   cellSize: 8
   chunkMaterial: {fileID: 2100000, guid: 8908da3cb4f92e448a332896de150c86, type: 2}

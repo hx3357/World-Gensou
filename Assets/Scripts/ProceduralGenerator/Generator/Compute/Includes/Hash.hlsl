@@ -26,7 +26,7 @@ uint3 pcg3d(uint3 v)
 
 // Hash function from H. Schechter & R. Bridson, goo.gl/RXiKaH
 
-#define USE_HR_HASH 0
+#define USE_HR_HASH 1
 
 uint HRHash(uint s)
 {

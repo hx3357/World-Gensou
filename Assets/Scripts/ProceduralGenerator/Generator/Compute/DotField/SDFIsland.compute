@@ -37,18 +37,51 @@ void CSMain (uint3 id : SV_DispatchThreadID)
     
     const float3 pos = id * cellSize+origin;
     DotExpl dot = INIT_DOT_EXPL;
-
-    [unroll]
+    
     for (int i=0;i<islandCount;i++)
     {
-        dot = smooth_colored_union(dot, island_basic_shape_sdf(pos,
-            islandPositions[i].xyz,
-            islandPositions[i].xyz,
-            islandParameters[i].x/2,
-            islandParameters[i].y,
-            WHITE*0.5,
-            islandParameters[i].x),
-            50);
+        switch (islandPositions[i].w)
+        {
+        case 0:
+            // Normal island
+            dot = smooth_colored_union(dot,
+                island_basic_shape_sdf(pos,
+                    islandPositions[i].xyz,
+                    islandPositions[i].xyz,
+                    islandParameters[i].x/8,
+                    islandParameters[i].y,
+                    WHITE*0.5,
+                    islandParameters[i].x*0.9),
+            10);
+            break;
+        case 1:
+            // Don't islandlize
+            dot = smooth_colored_union(dot,
+                island_basic_shape_sdf(pos,
+                    islandPositions[i].xyz,
+                    islandPositions[i].xyz,
+                    islandParameters[i].x/8,
+                    islandParameters[i].y,
+                    WHITE*0.5,
+                    islandParameters[i].x*0.9,false,false),
+            10);
+            break;
+        case 2:
+            // Lake island
+            dot = smooth_colored_union(dot,
+                island_basic_shape_sdf(pos,
+                    islandPositions[i].xyz,
+                    islandPositions[i].xyz,
+                    islandParameters[i].x/8,
+                    islandParameters[i].y,
+                    WHITE*0.5,
+                    islandParameters[i].x*0.9,true,true),
+            10);
+            break;
+        default: 
+            break;
+        }
+        
     }
     
     dot.w = sdf_linear_normalize(dot.w, isoLevel);

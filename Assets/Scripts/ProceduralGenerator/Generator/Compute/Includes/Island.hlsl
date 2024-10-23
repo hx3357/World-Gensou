@@ -101,31 +101,60 @@ float island_basic_shape_sdf(float3 pos, float3 origin, float baseRadius,float h
     #endif
 
     //Bottom face
-    sum = max(sum, -sdf_plane(pos, origin.y - height/2));
+    sum = max(sum, -sdf_plane(pos, origin.y - height /2 * 0.3));
     
     return sum;
 }
 
-DotExpl island_basic_shape_sdf(float3 pos, int3 hash,float3 origin, float baseRadius,float height, float3 color,float maxRadius)
+DotExpl normal_top_face_sdf(float3 pos, float3 islandPos,float3 origin, float baseRadius,float height, float3 color,float maxRadius,bool isIslandlize)
 {
-    const float3 islandPos = sdf_pos_islandlize(pos, origin, origin.y+0.5*(simple_hash(origin*2.11f)*2-1)*height);
+    // DotExpl top_face = sdf_plane(islandPos, origin.y , GREEN*(1-0.4*ClassicNoise(0.002*pos)));
+    // top_face.w -= 0.6 * height/2 * (fractalNoise( 0.0015 * pos ,5,2,0.5));
+    // return top_face;
+    DotExpl top_face = sdf_plane(islandPos, origin.y , GREEN*(1-0.4*ClassicNoise(0.002*pos)));
+    top_face.w -= clamp((maxRadius* 1.2  - length(islandPos-origin))/maxRadius,0.1,1)
+                    * height/2 * (fractalNoise( 0.002 * pos ,6,2,0.5));
+    return top_face;
+}
+
+DotExpl lake_top_face_sdf(float3 pos, float3 islandPos,float3 origin, float baseRadius,float height, float3 color,float maxRadius,bool isIslandlize)
+{
+    DotExpl top_face = sdf_plane(islandPos, origin.y , GREEN*(1-0.4*ClassicNoise(0.002*pos)));
+    top_face.w -= clamp(((0.82 - 0.1 * ClassicNoiseNormalized(0.01 * pos))*maxRadius  - length(islandPos-origin))/maxRadius,0,1)
+                   * 4 * height/2 * lerp(-0.6,0.5,fractalNoise( 0.002 * pos ,6,2,0.5));
+    return top_face;
+}
+
+DotExpl island_basic_shape_sdf(float3 pos, int3 hash,float3 origin, float baseRadius,float height, float3 color,float maxRadius,
+    bool isIslandlize=true,bool isLake=false)
+{
+    const float3 islandPos = isIslandlize? sdf_pos_islandlize(pos, origin, origin.y-height/6-0.4*simple_hash(origin*2.11f)*height/3): pos;
     float w = island_basic_shape_sdf(islandPos, origin, baseRadius, height, maxRadius);
     
     //Base shape disformation
 
-    const float frac_noise =0.5+ 3* fractalNoise(0.16/baseRadius * (origin + pos* float3(1,0,1)),5,2,0.6);
+    const float frac_noise = fractalNoise(2.1 / maxRadius  * (origin + islandPos* float3(1,0,1)),1,1.5,0.5);
     
-    w -= (maxRadius - baseRadius)*clamp(frac_noise,0,1);
+    w -= (maxRadius - baseRadius)*(1-0.15*frac_noise);
    
     //Surface disformation
-    w += 8 * fractalNoise(0.04 * pos,3,2,0.5);
+    w += 10 * fractalNoise(0.03 * pos,3,2,0.5);
     
     DotExpl result = create_dot_expl(w, color);
+    
     // Top face
-    result = smooth_colored_intersection(result,
-        disform( sdf_plane(islandPos, origin.y+height/2, GREEN*(1-0.3*f_snoise(0.001*pos))),
-            100 * fractalNoise(0.001 * pos,4,2.4,0.4)),
+    if(isLake)
+    {
+        result = smooth_colored_intersection(result,
+         lake_top_face_sdf(pos, islandPos, origin, baseRadius, height, color, maxRadius,isIslandlize),
         0.2*baseRadius);
+    }else
+    {
+        result = smooth_colored_intersection(result,
+         normal_top_face_sdf(pos, islandPos, origin, baseRadius, height, color, maxRadius,isIslandlize),
+        0.2*baseRadius);
+    }
+    
     return result;
 }
 
