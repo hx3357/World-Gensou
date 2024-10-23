@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.Assertions;
 
 namespace ChunkDispatchers.VoxelBasedDispatch
 {
@@ -182,42 +183,26 @@ namespace ChunkDispatchers.VoxelBasedDispatch
         }
         
 
-        public Dictionary<Vector3Int,ChunkParameter>  CalculateChunkCoords()
+        public void CalculateChunkCoords(Dictionary<Vector3Int,ChunkParameter> chunkCoordMap)
         {
+            Assert.IsFalse(chunkCoordMap == null, "ChunkCoordMap is null");
+            
             if (isLeaf)
             {
                 Vector3Int[] chunkCoords = GetChunkCoords();
-                Dictionary<Vector3Int,ChunkParameter> chunkCoordMap = new();
                 foreach (var chunkCoord in chunkCoords)
                 {
                     chunkCoordMap.TryAdd(chunkCoord, new ChunkParameter());
                     chunkCoordMap[chunkCoord].Add(this);
                 }
-                return chunkCoordMap;
             }
             else
             {
-                if (childVoxels == null) return null;
-                Dictionary<Vector3Int,ChunkParameter> chunkCoordMap = new();
+                if (childVoxels == null) return;
                 foreach (var childVoxel in childVoxels)
                 {
-                    var childChunkCoordMap = childVoxel?.CalculateChunkCoords();
-                    if(childChunkCoordMap == null)
-                        continue;
-                    foreach (var coord in childChunkCoordMap.Keys)
-                    {
-                        if (chunkCoordMap.ContainsKey(coord))
-                        {
-                            chunkCoordMap[coord].Merge(childChunkCoordMap[coord]);
-                        }
-                        else
-                        {
-                            chunkCoordMap.Add(coord, childChunkCoordMap[coord]);
-                        }
-                    }
+                    childVoxel?.CalculateChunkCoords(chunkCoordMap);
                 }
-                cachedChunkCoordMap = chunkCoordMap;
-                return chunkCoordMap;
             }
         }
 

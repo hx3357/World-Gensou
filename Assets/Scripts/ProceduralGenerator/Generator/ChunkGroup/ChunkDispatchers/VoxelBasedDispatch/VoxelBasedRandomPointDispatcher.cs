@@ -72,6 +72,7 @@ namespace ChunkDispatchers.VoxelBasedDispatch
         private Vector3Int lastPlayerVoxelCoord;
         private bool isFirstTime = true;
         private int baseVoxelSize;
+        private Dictionary<Vector3Int,ChunkParameter> chunkCoordMap = new();
 
 
         public VoxelBasedRandomPointDispatcher(VoxelMap[] m_voxelMaps, float baseVoxelSizeOffset,
@@ -94,6 +95,8 @@ namespace ChunkDispatchers.VoxelBasedDispatch
             chunksToGenerate = new();
             chunksToDestroy = new();
             chunkParameters = new();
+            
+            List<Voxel> generatedNewVoxels = new();
 
             Vector3Int _playerVoxelCoord = baseVoxelMap.GetVoxelCoordByPosition(playerPosition);
             int celledMaxViewedVoxelRadius =
@@ -110,8 +113,10 @@ namespace ChunkDispatchers.VoxelBasedDispatch
                     float distance = Vector3Int.Distance(voxelCoord, _playerVoxelCoord);
                     if (distance < celledMaxViewedVoxelRadius)
                     {
-                        baseVoxelDictionary.TryAdd(voxelCoord, new Voxel(voxelOrigin, baseVoxelMap.voxelSize, 0,
-                            true, initDotExp: dotCountExpection));
+                        Voxel newVoxel = new Voxel(voxelOrigin, baseVoxelMap.voxelSize, 0,
+                            true, initDotExp: dotCountExpection);
+                        baseVoxelDictionary.TryAdd(voxelCoord, newVoxel);
+                        generatedNewVoxels.Add(newVoxel);
                     }
                 }
 
@@ -127,31 +132,29 @@ namespace ChunkDispatchers.VoxelBasedDispatch
                 }
             }
 
-            foreach (var voxel in baseVoxelDictionary.Values)
+            foreach (var voxel in generatedNewVoxels)
             {
                 // (voxel.GetMinDistance(playerPosition) > maxViewDistance * Chunk.GetWorldSize()[0] ||
                 //  voxel.GetMaxDistance(playerPosition) < maxViewDistance * Chunk.GetWorldSize()[0])
+                voxel.CalculateChunkCoords(chunkCoordMap);
+            }
+            
+            foreach (var chunkCoord in chunkCoordMap)
+            {
+                if (!activeChunks.Contains(chunkCoord.Key) &&
+                    Vector3.Distance(Chunk.GetChunkCenterByCoord(chunkCoord.Key), playerPosition) <
+                    maxViewDistance * Chunk.GetWorldSize()[0])
+                {
+                    chunksToGenerate.Add(chunkCoord.Key);
+                    chunkParameters.Add(chunkCoord.Value.ToIslandSFGParameter());
+                }
 
-                var chunkCoordsMap = voxel.cachedChunkCoordMap ?? voxel.CalculateChunkCoords();
-
-                if (chunkCoordsMap != null)
-                    foreach (var chunkCoord in chunkCoordsMap)
-                    {
-                        if (!activeChunks.Contains(chunkCoord.Key) &&
-                            Vector3.Distance(Chunk.GetChunkCenterByCoord(chunkCoord.Key), playerPosition) <
-                            maxViewDistance * Chunk.GetWorldSize()[0])
-                        {
-                            chunksToGenerate.Add(chunkCoord.Key);
-                            chunkParameters.Add(chunkCoord.Value.ToIslandSFGParameter());
-                        }
-
-                        if (activeChunks.Contains(chunkCoord.Key) &&
-                            Vector3.Distance(Chunk.GetChunkCenterByCoord(chunkCoord.Key), playerPosition) >
-                            maxViewDistance * Chunk.GetWorldSize()[0])
-                        {
-                            chunksToDestroy.Add(chunkCoord.Key);
-                        }
-                    }
+                if (activeChunks.Contains(chunkCoord.Key) &&
+                    Vector3.Distance(Chunk.GetChunkCenterByCoord(chunkCoord.Key), playerPosition) >
+                    maxViewDistance * Chunk.GetWorldSize()[0])
+                {
+                    chunksToDestroy.Add(chunkCoord.Key);
+                }
             }
 
             isFirstTime = false;
@@ -177,18 +180,7 @@ namespace ChunkDispatchers.VoxelBasedDispatch
             foreach (var voxel in baseVoxelDictionary)
             {
                 //voxel.Value.DrawLeafGizmos();
-                if(voxel.Value.CalculateChunkCoords()!=null)
-                    foreach (var kvPair in voxel.Value.CalculateChunkCoords())
-                    {
-                        Vector3 hash = HashUtility.Get3DHash(voxel.Key);
-                        Gizmos.color = new Color(hash.x, hash.y, hash.z, 1f);
-                        Chunk.DrawChunkGizmo(kvPair.Key);
-                        // for(int i = 0; i < kvPair.Value.voxelPositions.Count; i++)
-                        // {
-                        //     Gizmos.color = Color.green;
-                        //     Gizmos.DrawCube(kvPair.Value.voxelPositions[i],Vector3.one*kvPair.Value.voxelSize[i]);
-                        // }
-                    }
+                    
                 // foreach (var coord in voxel.Value.GetChunkCoords())
                 // {
                 //     Vector3 hash = HashUtility.Get3DHash(voxel.Key);
@@ -197,6 +189,18 @@ namespace ChunkDispatchers.VoxelBasedDispatch
                 // }
                 voxel.Value.DrawGizmo();
             }
+            
+            // foreach (var kvPair in chunkCoordMap)
+            // {
+            //     Vector3 hash = HashUtility.Get3DHash(voxel.Key);
+            //     Gizmos.color = new Color(hash.x, hash.y, hash.z, 1f);
+            //     Chunk.DrawChunkGizmo(kvPair.Key);
+            //     // for(int i = 0; i < kvPair.Value.voxelPositions.Count; i++)
+            //     // {
+            //     //     Gizmos.color = Color.green;
+            //     //     Gizmos.DrawCube(kvPair.Value.voxelPositions[i],Vector3.one*kvPair.Value.voxelSize[i]);
+            //     // }
+            // }
         }
     }
 }
