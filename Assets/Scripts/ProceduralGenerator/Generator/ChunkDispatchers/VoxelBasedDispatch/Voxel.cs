@@ -26,17 +26,22 @@ namespace ChunkDispatchers.VoxelBasedDispatch
         bool isGenerate = false;
 
         public int voxelIndice;
+        // This type is depend on the exact use case defined in the on generate action
+        public int voxelType;
+
+        private bool isLeaf => childVoxels == null && isGenerate;
+        public readonly bool isRoot;
         
-        public bool isLeaf => childVoxels == null && isGenerate;
-        public bool isRoot;
+        bool isCalculateChunkCoords = false;
         
         public Dictionary<Vector3Int,ChunkParameter> cachedChunkCoordMap;
 
         private readonly float subVoxelExpandFactor;
         
         public Voxel(Vector3 m_worldOrigin, float m_worldSize,int m_dotCountExpection, bool m_isRoot,
-            int depth = 0,float initDotExp = 1f,
-            float mainVoxelshrinkFactor = 0.7f,float p_MainVoxel=0.6f, float _subVoxelExpandFactor = 0f)
+            int depth = 0,float initDotExp = 1f,Voxel m_fatherVoxel = null,int m_voxelIndice = 0,
+            float mainVoxelshrinkFactor = 0.7f,float p_MainVoxel=0.6f, float _subVoxelExpandFactor = 0f,
+            Action<Voxel> onGenerate = null)
         {
             size = Mathf.RoundToInt(m_worldSize/Chunk.GetWorldSize()[0]);
             worldOrigin = m_worldOrigin;
@@ -44,20 +49,23 @@ namespace ChunkDispatchers.VoxelBasedDispatch
             center = m_worldOrigin + worldSize / 2 * Vector3.one;
             isRoot = m_isRoot;
             subVoxelExpandFactor = _subVoxelExpandFactor;
+            fatherVoxel = m_fatherVoxel;
+            voxelIndice = m_voxelIndice;
             
             dotCount = m_isRoot ? PoissonSampler.GetPoissonSampleCount(initDotExp, center) : 
                 m_dotCountExpection;
             
             if (dotCount > 1)
             {
-                Spilt(depth,dotCount);
+                Spilt(depth,dotCount,onGenerate);
             }
             else if (dotCount == 1)
             {
                 if(Mathf.Abs(m_worldOrigin.GetHashCode() % 10000 / 10000f)>p_MainVoxel)
-                    Spilt(depth,dotCount+1);
+                    Spilt(depth,dotCount+1,onGenerate);
                 else
                 {
+                    // Generate Leaf voxel
                     isGenerate = true;
                     if (m_isRoot)
                     {
@@ -65,11 +73,12 @@ namespace ChunkDispatchers.VoxelBasedDispatch
                         worldSize *= mainVoxelshrinkFactor;
                         center = worldOrigin + worldSize / 2 * Vector3.one;
                     }
+                    onGenerate?.Invoke(this);
                 }
             }
         }
 
-        void Spilt(int curDepth,float dotCountExp)
+        void Spilt(int curDepth,float dotCountExp,Action<Voxel> onGenerate)
         {
             if(curDepth >= MAX_DEPTH)
                 return;
@@ -156,13 +165,11 @@ namespace ChunkDispatchers.VoxelBasedDispatch
                     //Make the sub voxel close together
                     finalSize *= 1 + subVoxelExpandFactor;
                     finalOrigin += (worldOrigin - finalOrigin).normalized * ((finalSize - worldSize/2)/2 * 1.42f * 1.2f);
-                    
+
                     childVoxels[i] = new Voxel(finalOrigin, finalSize, subVoxelDotCountList[i],
-                        false,curDepth+1)
-                        {
-                            fatherVoxel = this,
-                            voxelIndice = i
-                        };
+                        false, curDepth + 1,
+                        m_fatherVoxel:this,m_voxelIndice:i ,
+                        onGenerate: onGenerate);
                 }
                 
             }
@@ -173,11 +180,10 @@ namespace ChunkDispatchers.VoxelBasedDispatch
                 {
                     if (!isFilledList[i])
                         continue;
-                    childVoxels[i] = new Voxel(worldOrigin + HashUtility.Get3DHash(newOriginList[i]) * worldSize/4, 
-                        worldSize/2, subVoxelDotCountList[i],false,curDepth+1)
-                    {
-                        fatherVoxel = this
-                    };
+                    childVoxels[i] = new Voxel(worldOrigin + HashUtility.Get3DHash(newOriginList[i]) * worldSize / 4,
+                        worldSize / 2, subVoxelDotCountList[i], false, curDepth + 1,
+                        m_fatherVoxel: this,
+                        onGenerate: onGenerate);
                 }
             }
         }
@@ -186,6 +192,9 @@ namespace ChunkDispatchers.VoxelBasedDispatch
         public void CalculateChunkCoords(Dictionary<Vector3Int,ChunkParameter> chunkCoordMap)
         {
             Assert.IsFalse(chunkCoordMap == null, "ChunkCoordMap is null");
+            
+            if (isCalculateChunkCoords) return;
+            isCalculateChunkCoords = true;
             
             if (isLeaf)
             {

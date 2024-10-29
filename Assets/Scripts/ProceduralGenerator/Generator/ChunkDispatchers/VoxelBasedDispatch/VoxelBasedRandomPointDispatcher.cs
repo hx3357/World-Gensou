@@ -8,57 +8,16 @@ using UnityEngine.Rendering.VirtualTexturing;
 
 namespace ChunkDispatchers.VoxelBasedDispatch
 {
-    public class ChunkParameter
-    {
-        private List<Voxel> voxels = new();
-
-        public void Add(Voxel voxel)
-        {
-            voxels.Add(voxel);
-        }
-
-
-        public void Merge(ChunkParameter chunkParameter)
-        {
-            voxels.AddRange(chunkParameter.voxels);
-        }
-
-        public SDFIslandSFGParameter ToIslandSFGParameter(float lakePossibility = 0.6f)
-        {
-            Vector4[] islandPositions = new Vector4[voxels.Count];
-            Vector4[] islandParameters = new Vector4[voxels.Count];
-            for (int i = 0; i < voxels.Count; i++)
-            {
-                Voxel currentVoxel = voxels[i];
-                int voxelType = 0;
-                
-                if (currentVoxel.isRoot && Mathf.Abs(currentVoxel.center.GetHashCode() % 10000 / 10000f) < lakePossibility)
-                {
-                    // Generate lake island
-                    voxelType = 2;
-                }
-                else if(!currentVoxel.isRoot)
-                {
-                    voxelType = ((currentVoxel.voxelIndice & 3) >> 2) != 1 ? 1 : voxelType;
-                }
-                
-                islandPositions[i] = new Vector4(currentVoxel.center.x, currentVoxel.center.y, currentVoxel.center.z,
-                    voxelType);
-                islandParameters[i] = new Vector4(currentVoxel.worldSize / 2, currentVoxel.worldSize , 0, 0);
-            }
-
-            return new SDFIslandSFGParameter(islandPositions, islandParameters);
-        }
-    }
+    
 
     /// <summary>
-    /// Designed for sdf island SFG
+    /// <para>Designed for sdf island SFG</para>
     /// 
-    /// Suitable for surrounding boxs which size varies greatly.
-    /// When the dot count is greater than 1, the voxel will be cut into 8 sub voxels and distribute its dot count to the sub voxels.
-    /// When the dot count is 1, the chunk will be generated inside the voxel.
-    /// When the dot count is 0, the voxel will be ignored.
-    /// Surrounding boxs whose size is close to each other will be more likely to stay together.
+    /// <para>Suitable for surrounding boxs which size varies greatly.</para>
+    /// <para>When the dot count is greater than 1, the voxel will be cut into 8 sub voxels and distribute its dot count to the sub voxels.</para>
+    /// <para>When the dot count is 1, the chunk will be generated inside the voxel.</para>
+    /// <para>When the dot count is 0, the voxel will be ignored.</para>
+    /// <para>Surrounding boxs whose size is close to each other will be more likely to stay together.</para>
     /// </summary>
     public class VoxelBasedRandomPointDispatcher : IChunkDispatcher
     {
@@ -71,41 +30,37 @@ namespace ChunkDispatchers.VoxelBasedDispatch
         private Dictionary<Vector3Int, Voxel> baseVoxelDictionary = new();
         private Vector3Int lastPlayerVoxelCoord;
         private bool isFirstTime = true;
-        private int baseVoxelSize;
         private Dictionary<Vector3Int,ChunkParameter> chunkCoordMap = new();
+        private Action<Voxel> onVoxelGenerated;
 
-
-        public VoxelBasedRandomPointDispatcher(VoxelMap[] m_voxelMaps, float baseVoxelSizeOffset,
-            float dotCountExpection = 1f,int voxelChunkSize = 8)
+        public VoxelBasedRandomPointDispatcher(float dotCountExpection = 1f,int voxelChunkSize = 8,
+            Action<Voxel> m_onVoxelGenerated = null)
         {
-            // this.voxelMaps =new VoxelMap[m_voxelMaps.Length];
-            // Array.Copy(m_voxelMaps,this.voxelMaps,m_voxelMaps.Length);
-            // Array.Sort(voxelMaps,(a,b)=>a.voxelSize.CompareTo(b.voxelSize));
             this.dotCountExpection = dotCountExpection;
-            // baseVoxelMap = new VoxelMap(m_voxelMaps[^1].voxelSize+baseVoxelSizeOffset);
             baseVoxelMap = new VoxelMap(voxelChunkSize);
+            onVoxelGenerated = m_onVoxelGenerated;
         }
 
 
         public void DispatchChunks(SurroundBox chunkGroupSurroundBox, HashSet<Vector3Int> activeChunks,
             Vector3 playerPosition, float maxViewDistance,
             out List<Vector3Int> chunksToGenerate, out List<Vector3Int> chunksToDestroy,
-            out List<object> chunkParameters)
+            out object[] chunkParameters)
         {
             chunksToGenerate = new();
             chunksToDestroy = new();
-            chunkParameters = new();
+            List<object> chunkParametersList = new();
             
             List<Voxel> generatedNewVoxels = new();
 
             Vector3Int _playerVoxelCoord = baseVoxelMap.GetVoxelCoordByPosition(playerPosition);
             int celledMaxViewedVoxelRadius =
                 Mathf.CeilToInt(maxViewDistance * Chunk.GetWorldSize()[0] / baseVoxelMap.voxelSize) + 1;
-
+            
             if (isFirstTime || _playerVoxelCoord != lastPlayerVoxelCoord)
             {
                 for (int x = -celledMaxViewedVoxelRadius; x <= celledMaxViewedVoxelRadius; x++)
-                for (int y = -celledMaxViewedVoxelRadius / 3; y <= celledMaxViewedVoxelRadius / 3; y++)
+                for (int y = -celledMaxViewedVoxelRadius; y <= celledMaxViewedVoxelRadius; y++)
                 for (int z = -celledMaxViewedVoxelRadius; z <= celledMaxViewedVoxelRadius; z++)
                 {
                     Vector3Int voxelCoord = _playerVoxelCoord + new Vector3Int(x, y, z);
@@ -114,7 +69,7 @@ namespace ChunkDispatchers.VoxelBasedDispatch
                     if (distance < celledMaxViewedVoxelRadius)
                     {
                         Voxel newVoxel = new Voxel(voxelOrigin, baseVoxelMap.voxelSize, 0,
-                            true, initDotExp: dotCountExpection);
+                            true, initDotExp: dotCountExpection,onGenerate: onVoxelGenerated,_subVoxelExpandFactor: 0.5f);
                         baseVoxelDictionary.TryAdd(voxelCoord, newVoxel);
                         generatedNewVoxels.Add(newVoxel);
                     }
@@ -131,35 +86,36 @@ namespace ChunkDispatchers.VoxelBasedDispatch
                     }
                 }
             }
-
+            
             foreach (var voxel in generatedNewVoxels)
             {
-                // (voxel.GetMinDistance(playerPosition) > maxViewDistance * Chunk.GetWorldSize()[0] ||
-                //  voxel.GetMaxDistance(playerPosition) < maxViewDistance * Chunk.GetWorldSize()[0])
                 voxel.CalculateChunkCoords(chunkCoordMap);
             }
             
             foreach (var chunkCoord in chunkCoordMap)
             {
+                float playerChunkDistance = Vector3.Distance(Chunk.GetChunkCenterByCoord(chunkCoord.Key), playerPosition);
+                float curViewDistance = EllipticalDistance.GetDistance(playerPosition - Chunk.GetChunkCenterByCoord(chunkCoord.Key),
+                    maxViewDistance * Chunk.GetWorldSize()[0], maxViewDistance * 0.5f * Chunk.GetWorldSize()[0]);
+                
                 if (!activeChunks.Contains(chunkCoord.Key) &&
-                    Vector3.Distance(Chunk.GetChunkCenterByCoord(chunkCoord.Key), playerPosition) <
-                    maxViewDistance * Chunk.GetWorldSize()[0])
+                    playerChunkDistance < curViewDistance)
                 {
                     chunksToGenerate.Add(chunkCoord.Key);
-                    chunkParameters.Add(chunkCoord.Value.ToIslandSFGParameter());
+                    chunkParametersList.Add(chunkCoord.Value);
                 }
 
                 if (activeChunks.Contains(chunkCoord.Key) &&
-                    Vector3.Distance(Chunk.GetChunkCenterByCoord(chunkCoord.Key), playerPosition) >
-                    maxViewDistance * Chunk.GetWorldSize()[0])
+                    playerChunkDistance > curViewDistance)
                 {
                     chunksToDestroy.Add(chunkCoord.Key);
                 }
             }
 
             isFirstTime = false;
+            chunkParameters = chunkParametersList.ToArray();
 
-            if (IChunkDispatcher.isDebug)
+            if (DebugWhiteboard.Instance.isDebugChunkDispatcher)
             {
                 float volumeSum = 0;
                 foreach (var voxel in baseVoxelDictionary)
@@ -179,7 +135,7 @@ namespace ChunkDispatchers.VoxelBasedDispatch
                 return;
             foreach (var voxel in baseVoxelDictionary)
             {
-                //voxel.Value.DrawLeafGizmos();
+                voxel.Value.DrawLeafGizmos();
                     
                 // foreach (var coord in voxel.Value.GetChunkCoords())
                 // {

@@ -7,6 +7,9 @@ using UnityEngine.Assertions;
 using UnityEngine.Rendering;
 using Object = System.Object;
 
+/// <summary>
+/// CS: SDFIsland.compute
+/// </summary>
 public class SDFIslandScalerFieldGenerator : GPUScalerFieldGenerator
 {
    private readonly int seed;

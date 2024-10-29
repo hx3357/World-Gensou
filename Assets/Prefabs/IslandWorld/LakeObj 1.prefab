@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 3470642961016052173}
   - component: {fileID: 2045803797658834631}
   m_Layer: 0
-  m_Name: LakeObj
+  m_Name: LakeObj 1
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -61,7 +61,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 311c16bb094259e44816c456fa6dc370, type: 2}
+  - {fileID: 2100000, guid: d927829c4cf401c468b901142208c761, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0

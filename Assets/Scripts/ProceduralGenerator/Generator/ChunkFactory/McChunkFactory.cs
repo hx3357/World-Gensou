@@ -25,8 +25,8 @@ public class McChunkFactory : MonoBehaviour, IChunkFactory
     private ComputeShader cs;
     private ComputeShader downSampleCS;
 
-    private HashSet<Vector3> currentProducingChunkSet = new HashSet<Vector3>();
-    private Dictionary<Vector3, Chunk> chunkDict = new Dictionary<Vector3, Chunk>();
+    private Dictionary<Vector3,ProducingChunkToken> currentProducingChunkSet = new ();
+    private Dictionary<Vector3, Chunk> chunkDict = new ();
 
     private float isoSurface;
     private float lerpParam;
@@ -126,9 +126,18 @@ public class McChunkFactory : MonoBehaviour, IChunkFactory
                 indices.Add(vertexIndexMap[triangle.p3]);
             }
         }
+        
+        public void Dispose()
+        {
+            vertices.Dispose();
+            indices.Dispose();
+            vertColors.Dispose();
+            vertexIndexMap.Dispose();
+            triangles.Dispose();
+        }
     }
 
-    IEnumerator ProduceChunkCoroutine1(Vector3 m_origin, Material m_chunkMaterial = null)
+    IEnumerator ProduceChunkCoroutineWithDotfieldOnCpu(Vector3 m_origin, Material m_chunkMaterial = null)
     {
         Vector3 _origin = origin;
         Vector3Int _chunkSize = chunkSize;
@@ -287,17 +296,22 @@ public class McChunkFactory : MonoBehaviour, IChunkFactory
         currentProducingChunkSet.Remove(_origin);
     }
 
-    IEnumerator ProduceChunkCoroutine(Vector3 m_origin, Material m_chunkMaterial = null)
+    IEnumerator ProduceChunkCoroutine(Vector3 m_origin, ProducingChunkToken token,Material m_chunkMaterial = null)
     {
         Vector3 _origin = origin;
         Vector3Int _chunkSize = chunkSize;
         Vector3 _cellSize = cellSize;
         Vector3Int _dotFieldSize = dotFieldSize;
-        float _downSampleRate = downSampleRate;
 
         //Generate Dot Field
         ScalerFieldRequestData requestData =
             scalerFieldGenerator.StartGenerateDotField(_origin, _dotFieldSize, _cellSize, parameters);
+
+        foreach (var buffer in requestData.buffers)
+        {
+            token.disposables.Push(buffer);
+        }
+        
         bool isZeroFlag;
 
         while (true)
@@ -335,6 +349,10 @@ public class McChunkFactory : MonoBehaviour, IChunkFactory
             Triangle.SizeOf, ComputeBufferType.Append);
         triangleBuffer.SetCounterValue(0);
         var triangleCountBuffer = new ComputeBuffer(1, sizeof(int), ComputeBufferType.Raw);
+        
+        token.disposables.Push(pointBuffer);
+        token.disposables.Push(triangleBuffer);
+        token.disposables.Push(triangleCountBuffer);
 
         RunMarchingCubeComputeShader(_origin, _cellSize, _dotFieldSize, pointBuffer, triangleBuffer);
 
@@ -345,6 +363,9 @@ public class McChunkFactory : MonoBehaviour, IChunkFactory
         int[] count = new int[1];
         NativeArray<Triangle> rawTriangles =
             new NativeArray<Triangle>(5 * _dotFieldSize.x * _dotFieldSize.y * _dotFieldSize.z, Allocator.Persistent);
+        
+        token.disposables.Push(rawTriangles);
+        
         bool isRawTriangleReady = false, isCountReady = false;
         bool isError = false;
 
@@ -402,7 +423,7 @@ public class McChunkFactory : MonoBehaviour, IChunkFactory
             triangleCountBuffer.Release();
             //currentProducingChunkSet.Remove(_origin);
             //ProduceChunk(_origin, _chunkSize, _cellSize, m_chunkMaterial);
-            StartCoroutine(ProduceChunkCoroutine(m_origin, m_chunkMaterial));
+            StartCoroutine(ProduceChunkCoroutine(m_origin,token ,m_chunkMaterial));
             yield break;
         }
 
@@ -414,15 +435,17 @@ public class McChunkFactory : MonoBehaviour, IChunkFactory
         //Generate Mesh
         GenerateMeshJob job = new()
         {
-            triangles = new NativeArray<Triangle>(_triangles, Allocator.Persistent),
-            vertices = new(0, Allocator.Persistent),
-            indices = new(0, Allocator.Persistent),
-            vertexIndexMap = new(_triangles.Length, Allocator.Persistent),
-            vertColors = new(0, Allocator.Persistent)
+            triangles = new NativeArray<Triangle>(_triangles, Allocator.TempJob),
+            vertices = new(0, Allocator.TempJob),
+            indices = new(0, Allocator.TempJob),
+            vertexIndexMap = new(_triangles.Length, Allocator.TempJob),
+            vertColors = new(0, Allocator.TempJob)
         };
 
         JobHandle handle = job.Schedule();
-
+        token.job = job;
+        token.handle = handle;
+        
         while (!handle.IsCompleted)
             yield return null;
 
@@ -435,12 +458,8 @@ public class McChunkFactory : MonoBehaviour, IChunkFactory
         job.vertices.AsArray().Reinterpret<Vector3>().CopyTo(vertices);
         job.indices.AsArray().CopyTo(indices);
         job.vertColors.AsArray().CopyTo(vertColors);
-
-        job.vertices.Dispose();
-        job.indices.Dispose();
-        job.triangles.Dispose();
-        job.vertexIndexMap.Dispose();
-        job.vertColors.Dispose();
+        
+        job.Dispose();
 
         chunkMesh.vertices = vertices;
         chunkMesh.triangles = indices;
@@ -450,7 +469,10 @@ public class McChunkFactory : MonoBehaviour, IChunkFactory
         chunkMesh.RecalculateTangents();
 
         //Create Chunk GameObject
-        GameObject chunkObject = new GameObject("Chunk");
+        GameObject chunkObject = new GameObject("Chunk")
+        {
+            isStatic = true
+        };
         Chunk chunk = chunkObject.AddComponent<Chunk>();
         chunkMaterial = m_chunkMaterial != null ? m_chunkMaterial : defaultChunkMaterial;
         chunkObject.transform.position = m_origin;
@@ -459,6 +481,14 @@ public class McChunkFactory : MonoBehaviour, IChunkFactory
         chunk.SetMaterial(chunkMaterial);
         chunkDict.TryAdd(m_origin, chunk);
         currentProducingChunkSet.Remove(_origin);
+    }
+    
+    class ProducingChunkToken
+    {
+        public Chunk chunk;
+        public Stack<IDisposable> disposables = new();
+        public GenerateMeshJob job;
+        public JobHandle handle;
     }
 
     private void Awake()
@@ -469,6 +499,31 @@ public class McChunkFactory : MonoBehaviour, IChunkFactory
         };
     }
 
+    private void OnDestroy()
+    {
+        foreach (var chunkToken in currentProducingChunkSet.Values)
+        {
+            foreach (var disposable in chunkToken.disposables)
+            {
+                if(disposable != null)
+                {
+                    try
+                    {
+                        disposable.Dispose();
+                    }
+                    catch (ObjectDisposedException e) { }
+                }
+            }
+            
+            chunkToken.handle.Complete();
+            try
+            {
+                chunkToken.job.Dispose();
+            }
+            catch (ObjectDisposedException e) { }
+        }
+    }
+
     #endregion
 
     #region ExposingAPI
@@ -476,9 +531,8 @@ public class McChunkFactory : MonoBehaviour, IChunkFactory
     public void ProduceChunk(Vector3 m_origin, Vector3Int m_chunkSize, Vector3 m_cellSize,
         Material m_chunkMaterial = null, bool m_isForceUpdate = false, object[] m_parameters = null)
     {
-        if (currentProducingChunkSet.Contains(m_origin))
+        if (currentProducingChunkSet.ContainsKey(m_origin))
         {
-            //Debug.Log("Chunk is already producing");
             return;
         }
 
@@ -500,18 +554,9 @@ public class McChunkFactory : MonoBehaviour, IChunkFactory
         cellSize = m_cellSize;
         originDotFieldSize = dotFieldSize = new Vector3Int(m_chunkSize.x + 1, m_chunkSize.y + 1, m_chunkSize.z + 1);
         parameters = m_parameters;
-        currentProducingChunkSet.Add(m_origin);
-        StartCoroutine(ProduceChunkCoroutine(m_origin, m_chunkMaterial));
-    }
-
-    public void DeleteChunk(Vector3 m_origin)
-    {
-        if (chunkDict.ContainsKey(m_origin))
-        {
-            Chunk chunk = chunkDict[m_origin];
-            chunk.ClearChunk();
-            chunkDict.Remove(m_origin);
-        }
+        ProducingChunkToken token = new ProducingChunkToken();
+        currentProducingChunkSet[origin] = token;
+        StartCoroutine(ProduceChunkCoroutine(m_origin, token,m_chunkMaterial));
     }
 
     public void DeleteChunk(Vector3Int m_coord)
@@ -523,14 +568,6 @@ public class McChunkFactory : MonoBehaviour, IChunkFactory
             chunk.ClearChunk();
             chunkDict.Remove(m_origin);
         }
-    }
-
-    public void ProduceChunk(Vector3Int chunkCoord, Chunk.LODLevel lodLevel, Material m_chunkMaterial = null,
-        bool m_isForceUpdate = false)
-    {
-        SetDownSampler(downSampleCS, Chunk.lodDownSampleRateTable[lodLevel]);
-        ProduceChunk(Chunk.GetChunkOriginByCoord(chunkCoord), Chunk.universalChunkSize,
-            Chunk.universalCellSize, m_chunkMaterial, m_isForceUpdate);
     }
 
     public void ProduceChunk(Vector3Int chunkCoord, Material m_chunkMaterial = null, bool m_isForceUpdate = false,

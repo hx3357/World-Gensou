@@ -5,29 +5,36 @@ using UnityEngine.Assertions;
 public class ObjectPlacer : MonoSingleton<ObjectPlacer>
 {
     public ObjectTable objectTable;
+    public Transform player;
 
-    private Dictionary<string, List<PlaceableObject>> objectPool;
+    // Key: objectName, Value: inactive objects
+    private Dictionary<string, Queue<PlaceableObject>> objectPool;
+  
     private List<PlaceableObject> currentObjects = new();
+    private GameObject parentObj;
     
     private class PlaceableObject
     {
-        public string objectName;
-        public GameObject[] runtimeGameObjectLOD;
-        public float[] viewDistance;
-        public bool isActive;
-        public int currentLOD;
-        public GameObject currentGameObject => runtimeGameObjectLOD[currentLOD];
+        public readonly string objectName;
+        private GameObject[] runtimeGameObjectLOD;
+        private float[] viewDistance;
+        private bool isActive;
+        private int currentLOD;
+
+        private GameObject currentGameObject => runtimeGameObjectLOD[currentLOD];
         
-        public PlaceableObject(string objectName,GameObject[] runtimeGameObjectLOD, float[] viewDistance)
+        public PlaceableObject(string objectName,GameObject[] gameObjectLOD, float[] viewDistance,Transform parent,Vector3 playerPosition)
         {
-            for(int i = 0;i<runtimeGameObjectLOD.Length;i++)
+            runtimeGameObjectLOD = new GameObject[gameObjectLOD.Length];
+            
+            for(int i = 0;i<gameObjectLOD.Length;i++)
             {
-                runtimeGameObjectLOD[i] = Instantiate(runtimeGameObjectLOD[i]);
+                runtimeGameObjectLOD[i] = Instantiate(gameObjectLOD[i]);
+                runtimeGameObjectLOD[i].transform.parent = parent;
             }
             this.viewDistance = viewDistance;
-            isActive = false;
-            currentLOD = 0;
             this.objectName = objectName;
+            SetActive(true);
         }
         
         public void SetActive(bool active)
@@ -39,7 +46,7 @@ public class ObjectPlacer : MonoSingleton<ObjectPlacer>
             }
         }
         
-        public void SetLOD(int lod)
+        private void SetLOD(int lod)
         {
             currentLOD = lod;
             for(int i = 0; i < runtimeGameObjectLOD.Length; i++)
@@ -48,18 +55,18 @@ public class ObjectPlacer : MonoSingleton<ObjectPlacer>
             }
         }
         
-        public void SetLOD(Vector3 playerPosition)
+        public bool SetLOD(Vector3 playerPosition)
         {
             for(int i = 0; i < viewDistance.Length; i++)
             {
-                if(Vector3.Distance(currentGameObject.transform.position, playerPosition) < viewDistance[i])
+                if(Vector3.Distance(currentGameObject.transform.position, playerPosition) < viewDistance[i] * Chunk.GetWorldSize()[0])
                 {
                     SetLOD(i);
-                    return;
+                    return true;
                 }
             }
 
-            SetActive(false);
+            return false;
         }
         
         public void SetTransform(Vector3 position, Vector3 scale, Vector3 rotation)
@@ -78,28 +85,29 @@ public class ObjectPlacer : MonoSingleton<ObjectPlacer>
         }
     }
 
-    private void Awake()
+    protected override void Awake()
     {
+        base.Awake();
+        
         objectPool = new();
         foreach (var placeableObject in objectTable.placeableObjects)
         {
             objectPool.Add(placeableObject.objectName, new ());
         }
+        
+        parentObj = new GameObject("PlaceableObjects");
     }
 
-    PlaceableObject GetPlaceableObject(string objectName, int lod = 0)
+    PlaceableObject GetPlaceableObject(string objectName)
     {
         Assert.IsTrue(objectPool.ContainsKey(objectName),
             "Placeable objects does not contain objectName: " + objectName);
-
-        foreach (var obj in objectPool[objectName])
+        
+        if(objectPool[objectName].Count > 0)
         {
-            if (obj.isActive == false)
-            {
-                obj.currentLOD = lod;
-                obj.SetActive(true);
-                return obj;
-            }
+            PlaceableObject obj = objectPool[objectName].Dequeue();
+            obj.SetActive(true);
+            return obj;
         }
 
         // If there is no available object in the pool, instantiate a new one
@@ -108,36 +116,60 @@ public class ObjectPlacer : MonoSingleton<ObjectPlacer>
         {
             if (placeableObject.objectName == objectName)
             {
-                Assert.IsFalse(placeableObject.gameObjectLOD.Length <= lod,
-                    "Object " + objectName + " does not have LOD " + lod);
-                
-                newObject = new PlaceableObject(objectName, placeableObject.gameObjectLOD, placeableObject.viewDistance);
+                newObject = new PlaceableObject(objectName, placeableObject.gameObjectLOD, placeableObject.viewDistance,
+                    parentObj.transform,player.position);
+                break;
             }
         }
         
-        Assert.IsFalse(newObject == null, "Object " + objectName + " not found in objectTable");
-
         return newObject;
     }
 
     void DisableObject(PlaceableObject obj)
     {
         obj.SetActive(false);
+        objectPool[obj.objectName].Enqueue(obj);
+    }
+
+    private int GetObjHash(Vector3 worldPosition, Vector3 objectSize, Vector3 objectRotation, string objectName)
+    {
+        return worldPosition.GetHashCode() + objectSize.GetHashCode() + objectRotation.GetHashCode() +
+               objectName.GetHashCode();
     }
 
 
     public void PlaceObject(Vector3 worldPosition, Vector3 objectSize, Vector3 objectRotation, string objectName)
     {
+        foreach (var placeableObject in objectTable.placeableObjects)
+        {
+            if (placeableObject.objectName != objectName) continue;
+            if(Vector3.Distance(worldPosition, player.position) > placeableObject.viewDistance[^1] * Chunk.GetWorldSize()[0])
+                return;
+        }
+        
         PlaceableObject newPlaceableObject = GetPlaceableObject(objectName);
         newPlaceableObject.SetTransform(worldPosition, objectSize, objectRotation);
+        newPlaceableObject.SetLOD(player.position);
         currentObjects.Add(newPlaceableObject);
     }
 
-    public void UpdatePlacer(Vector3 playerPosition)
+    public void UpdatePlacer()
     {
+        List<PlaceableObject> objectsToDisable = new();
+        
         foreach (var obj in currentObjects)
         {
-            obj.SetLOD(playerPosition);
+            bool isStillThere = obj.SetLOD(player.position);
+            if (!isStillThere)
+            {
+                DisableObject(obj);
+                objectsToDisable.Add(obj);
+            }
+        }
+        
+        foreach (var obj in objectsToDisable)
+        {
+            currentObjects.Remove(obj);
         }
     }
 }

@@ -46,12 +46,12 @@ public class GPUScalerFieldGenerator : IScalerFieldGenerator
     
     public virtual void Release(ScalerFieldRequestData scalerFieldRequestData, bool isNotReleaseDotfieldBuffer = false)
     {
-        foreach (var i in scalerFieldRequestData.buffers)
+        for(int i = 0;i<scalerFieldRequestData.buffers.Length;i++)
         {
-            if(isNotReleaseDotfieldBuffer&& i == scalerFieldRequestData.buffers[0])
+            if(isNotReleaseDotfieldBuffer&& i == 0)
                 continue;
-                
-            i.Release();
+            scalerFieldRequestData.buffers[i].Release();
+            scalerFieldRequestData.buffers[i] = null;
         }
     }
 

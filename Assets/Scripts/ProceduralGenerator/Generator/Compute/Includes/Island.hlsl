@@ -139,7 +139,7 @@ DotExpl island_basic_shape_sdf(float3 pos, int3 hash,float3 origin, float baseRa
 
     const float frac_noise = fractalNoise(2.1 / maxRadius  * (origin + islandPos* float3(1,0,1)),1,1.5,0.5);
     
-    w -= (maxRadius - baseRadius)*(1-0.15*frac_noise);
+    w -= (maxRadius - baseRadius)*(1-0.2*frac_noise);
    
     //Surface disformation
     w += 10 * fractalNoise(0.03 * pos,3,2,0.5);

@@ -3,14 +3,15 @@ using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
-/// Generate chunks in a spherical area around the player based on the max view distance
-/// Directly generate chunks in the spherical area and destroy chunks outside the spherical area
+/// <para>Generate chunks in a spherical area around the player based on the max view distance.</para>
+/// <para>Directly generate chunks in the spherical area and destroy chunks outside the spherical area.</para>
+/// <para>No chunk parameters are generated. </para>
 /// </summary>
 public class SphericalDispatcher : IChunkDispatcher
 {
     public void DispatchChunks(SurroundBox chunkGroupSurroundBox,HashSet<Vector3Int> activeChunks,
         Vector3 playerPosition, float maxViewDistance, 
-        out List<Vector3Int> chunksToGenerate, out List<Vector3Int> chunksToDestroy, out List<object> chunkParameters)
+        out List<Vector3Int> chunksToGenerate, out List<Vector3Int> chunksToDestroy, out object[] chunkParameters)
     {
         Vector3Int _playerChunkCoord = Chunk.GetChunkCoordByPosition(playerPosition);
         int celledMaxViewDistance = Mathf.CeilToInt(maxViewDistance)+1;

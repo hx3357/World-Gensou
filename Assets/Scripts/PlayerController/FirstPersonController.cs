@@ -33,6 +33,16 @@ public class FirstPersonController : MonoBehaviour
         float moveSide = Input.GetAxis("Horizontal") * speed;
         Vector3 move = transform.forward * moveForward + transform.right * moveSide;
         characterController.Move(move * Time.deltaTime);
+
+        if (Input.GetKey(KeyCode.Space))
+        {
+            transform.position += Vector3.up * (speed * Time.deltaTime);
+        }
+        
+        if (Input.GetKey(KeyCode.LeftControl))
+        {
+            transform.position += Vector3.down * (speed * Time.deltaTime);
+        }
         
         if(Input.GetKeyDown(KeyCode.Escape))
         {

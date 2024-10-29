@@ -51,8 +51,8 @@ void CSMain (uint3 id : SV_DispatchThreadID)
                     islandParameters[i].x/8,
                     islandParameters[i].y,
                     WHITE*0.5,
-                    islandParameters[i].x*0.9),
-            10);
+                    islandParameters[i].x*0.9,true,false),
+            30);
             break;
         case 1:
             // Don't islandlize
@@ -64,7 +64,7 @@ void CSMain (uint3 id : SV_DispatchThreadID)
                     islandParameters[i].y,
                     WHITE*0.5,
                     islandParameters[i].x*0.9,false,false),
-            10);
+            30);
             break;
         case 2:
             // Lake island
@@ -76,7 +76,7 @@ void CSMain (uint3 id : SV_DispatchThreadID)
                     islandParameters[i].y,
                     WHITE*0.5,
                     islandParameters[i].x*0.9,true,true),
-            10);
+            30);
             break;
         default: 
             break;

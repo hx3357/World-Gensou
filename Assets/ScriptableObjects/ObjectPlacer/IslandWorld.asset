@@ -16,7 +16,7 @@ MonoBehaviour:
   - objectName: Lake
     gameObjectLOD:
     - {fileID: 7420397023563812191, guid: 9e09d083ba97fdd46a3261a9708c3f93, type: 3}
-    - {fileID: 3522583196715597236, guid: 4bc979ded31c10e4599cb336019ee5f3, type: 3}
+    - {fileID: 7420397023563812191, guid: 4488f2cf9109bfc49a0fb09fb25891b3, type: 3}
     viewDistance:
-    - 500
-    - 800
+    - 16
+    - 32
