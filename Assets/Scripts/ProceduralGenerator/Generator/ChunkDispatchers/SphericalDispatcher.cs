@@ -9,13 +9,21 @@ using UnityEngine;
 /// </summary>
 public class SphericalDispatcher : IChunkDispatcher
 {
-    public void DispatchChunks(SurroundBox chunkGroupSurroundBox,HashSet<Vector3Int> activeChunks,
-        Vector3 playerPosition, float maxViewDistance, 
-        out List<Vector3Int> chunksToGenerate, out List<Vector3Int> chunksToDestroy, out object[] chunkParameters)
+    
+    int chunkResolution = 31;
+    
+    public SphericalDispatcher(int m_chunkResolution)
+    {
+        chunkResolution = m_chunkResolution;
+    }
+    
+    public void DispatchChunks(in SurroundBox chunkGroupSurroundBox,in Dictionary<Vector3Int,int> activeChunks,
+        in Vector3 playerPosition,in float maxViewDistance, 
+        ref List<(Vector3Int,int)> chunksToGenerate, ref List<Vector3Int> chunksToDestroy, ref object[] chunkParameters)
     {
         Vector3Int _playerChunkCoord = Chunk.GetChunkCoordByPosition(playerPosition);
         int celledMaxViewDistance = Mathf.CeilToInt(maxViewDistance)+1;
-        chunksToGenerate = new List<Vector3Int>();
+        chunksToGenerate = new List<(Vector3Int,int)>();
         chunksToDestroy = new List<Vector3Int>();
         chunkParameters = null;
       
@@ -27,14 +35,14 @@ public class SphericalDispatcher : IChunkDispatcher
             float distance = Vector3Int.Distance(chunkCoord,_playerChunkCoord);
             if(distance <= maxViewDistance&&chunkGroupSurroundBox.IsInSurroundBox(chunkCoord))
             {
-                if(!activeChunks.Contains(chunkCoord))
+                if(!activeChunks.ContainsKey(chunkCoord))
                 {
-                    chunksToGenerate.Add(chunkCoord);
+                    chunksToGenerate.Add((chunkCoord,chunkResolution));
                 }
             }
             else
             {
-                if(activeChunks.Contains(chunkCoord))
+                if(activeChunks.ContainsKey(chunkCoord))
                 {
                     chunksToDestroy.Add(chunkCoord);
                 }

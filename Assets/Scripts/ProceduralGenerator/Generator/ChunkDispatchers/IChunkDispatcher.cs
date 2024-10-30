@@ -11,12 +11,12 @@ public interface IChunkDispatcher
     /// <param name="activeChunks"></param>
     /// <param name="playerPosition"></param>
     /// <param name="maxViewDistance"></param>
-    /// <param name="chunksToGenerate"></param>
+    /// <param name="chunksToGenerate">Value 1: chunk coord, Value 2: chunk resolution</param>
     /// <param name="chunksToDestroy"></param>
     /// <param name="chunkParameters"> The chunk parameter defined by the dispatcher </param>
-    public void DispatchChunks(SurroundBox chunkGroupSurroundBox,HashSet<Vector3Int> activeChunks,
-        Vector3 playerPosition, float maxViewDistance, 
-        out List<Vector3Int> chunksToGenerate,out List<Vector3Int> chunksToDestroy, out object[] chunkParameters);
+    public void DispatchChunks(in SurroundBox chunkGroupSurroundBox,in Dictionary<Vector3Int,int> activeChunks,
+        in Vector3 playerPosition,in float maxViewDistance, 
+       ref List<(Vector3Int,int)> chunksToGenerate,ref List<Vector3Int> chunksToDestroy,ref object[] chunkParameters);
     
     public void ShowDebugGizmos();
     

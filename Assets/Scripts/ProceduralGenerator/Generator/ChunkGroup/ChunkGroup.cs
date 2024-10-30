@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.Assertions;
+using Random = UnityEngine.Random;
 
 public class ChunkGroup : MonoBehaviour
 {
@@ -18,7 +19,9 @@ public class ChunkGroup : MonoBehaviour
    protected object[] scalerFieldParameters;
    
    protected IChunkFactory chunkFactory;
-   protected HashSet<Vector3Int> activeChunks {get; private set;} = new ();
+   
+   // Chunk coord -> resolution
+   protected Dictionary<Vector3Int,int> activeChunks {get; private set;} = new ();
    protected SurroundBox surroundBox;
 
    protected PerlinNoise3D perlinNoise3D;
@@ -26,7 +29,7 @@ public class ChunkGroup : MonoBehaviour
    private int firstTimeChunksNumPerGenerate = 50;
    private int firstTimeChunksGenerationInterval = 1;
    
-   private int gameplayChunksNumPerGenerate = 5;
+   private int gameplayChunksNumPerGenerate = 30;
    private int gameplayChunksGenerationInterval = 1;
 
    private int chunksNumPerGenerate => isFirstTime ? firstTimeChunksNumPerGenerate : gameplayChunksNumPerGenerate;
@@ -76,15 +79,19 @@ public class ChunkGroup : MonoBehaviour
          return;
       
       ObjectPlacer.Instance.UpdatePlacer();
-      
+
+      List<(Vector3Int,int)> chunksToGenerate = null;
+      List<Vector3Int> chunksToDestroy = null;
+      object[] chunkParameters = null;
       
       chunkDispatcher.DispatchChunks(surroundBox,activeChunks, playerPosition,m_maxViewDistance,
-         out List<Vector3Int> chunksToGenerate, out List<Vector3Int> chunksToDestroy, out object[] chunkParameters);
+         ref chunksToGenerate, ref chunksToDestroy, ref chunkParameters);
       
       //Convert chunk parameters to SFG parameters
       chunkParameters = chunkPatameterAdapter.ConvertToSFGParameters(chunkParameters);
       
       //Garbage collection
+      
       // if(garbageCollectionCounter++ >= garbageCollectionInterval)
       // {
       //    garbageCollectionCounter = 0;
@@ -96,12 +103,13 @@ public class ChunkGroup : MonoBehaviour
       //       chunksToDestroy.Add(chunk);
       //    }
       // }
-
-      foreach (var chunk in chunksToDestroy)
-      {
-         activeChunks.Remove(chunk);
-         chunkFactory.DeleteChunk(chunk);
-      }
+      
+      if(chunksToDestroy != null)
+         foreach (var chunk in chunksToDestroy)
+         {
+            activeChunks.Remove(chunk);
+            chunkFactory.DeleteChunk(chunk);
+         }
       
       StartCoroutine(AsyncLoadChunksCoroutine(chunksToGenerate,chunkParameters));
    }
@@ -114,7 +122,7 @@ public class ChunkGroup : MonoBehaviour
    /// When this parameter is null, the scaler field generator will use the initial parameters
    /// </param>
    /// <returns></returns>
-   IEnumerator AsyncLoadChunksCoroutine(List<Vector3Int> chunksToBeProduced, object[] m_parameters = null)
+   IEnumerator AsyncLoadChunksCoroutine(List<(Vector3Int,int)> chunksToBeProduced, object[] m_parameters = null)
    {
       if(m_parameters != null)
          Assert.IsTrue(chunksToBeProduced.Count == m_parameters.Length,"Parameters count should be equal to chunks count");
@@ -125,9 +133,9 @@ public class ChunkGroup : MonoBehaviour
       {
          for(int j=0;j<chunksNumPerGenerate&&i<chunksToBeProduced.Count;j++)
          {
-            activeChunks.Add(chunksToBeProduced[i]);
-            chunkFactory.ProduceChunk(chunksToBeProduced[i],m_chunkMaterial: chunkMaterial,
-               SFGParameters: m_parameters == null ? scalerFieldParameters :new []{ m_parameters[i]},m_isForceUpdate:true);
+            activeChunks.TryAdd(chunksToBeProduced[i].Item1,chunksToBeProduced[i].Item2);
+            chunkFactory.ProduceChunk(chunksToBeProduced[i].Item1,chunksToBeProduced[i].Item2 ,m_chunkMaterial: chunkMaterial,
+               SFGParameters: m_parameters == null ? scalerFieldParameters :new []{ m_parameters[i]},m_isForceUpdate:false);
             i++;
          }
          for(int j=0;j<chunksGenerationInterval;j++)

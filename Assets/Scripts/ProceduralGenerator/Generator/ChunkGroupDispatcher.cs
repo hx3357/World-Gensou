@@ -9,7 +9,7 @@ public class ChunkGroupDispatcher : MonoBehaviour
     public Transform playerTransform;
 
     public int maxViewDistance = 5;
-    public int chunkSize = 32;
+    public float chunkSize = 32*4;
     public float cellSize = 1;
     public Material chunkMaterial;
     public float downSampleRate = 1;
@@ -40,7 +40,7 @@ public class ChunkGroupDispatcher : MonoBehaviour
 
     private void Awake()
     {
-        Chunk.SetUniversalChunkSize(chunkSize * Vector3Int.one, cellSize * Vector3.one);
+        Chunk.SetUniversalChunkSize(chunkSize);
     }
 
     private void Start()
@@ -102,19 +102,20 @@ public class ChunkGroupDispatcher : MonoBehaviour
 
         chunkGroup0 = gameObject.AddComponent<ChunkGroup>();
         chunkGroup0.Initialize(chunkFactory0,
-            new SphericalDispatcher(), maxViewDistance, chunkMaterial,
+            new SphericalDispatcher(31), maxViewDistance, chunkMaterial,
             SurroundBox.InfiniteSurroundBox, seed,10 ,new SDFIslandSFGParameter(
                 new[] { new Vector4(300, 200, 100, 0), new Vector4(-100, 100, 100, 0) },
                 new[] { new Vector4(100, 500, 100, 0), new Vector4(100, 500, 100, 0) }
             ));
+        
+        
 
         chunkGroup1 = gameObject.AddComponent<ChunkGroup>();
-        chunkGroup1.Initialize(chunkFactory0,
-            new VoxelBasedRandomPointDispatcher(m_onVoxelGenerated: currentVoxel =>
+        chunkGroup1.Initialize(chunkFactory0,new VoxelBasedRandomPointDispatcher(m_onVoxelGenerated: currentVoxel =>
             {
                 int islandType = 0;
                 float lakePossibility = 1f;
-
+        
                 if (currentVoxel.isRoot)
                 {
                     if (Mathf.Abs(currentVoxel.center.GetHashCode() % 10000 / 10000f) < lakePossibility)
@@ -133,9 +134,10 @@ public class ChunkGroupDispatcher : MonoBehaviour
                     // Generate Upper Island
                     islandType = ((currentVoxel.voxelIndice & 4) >> 2) == 1 ? 1 : islandType;
                 }
-
+        
                 currentVoxel.voxelType = islandType;
-            }),
+            })
+           ,
             maxViewDistance, chunkMaterial, null, seed, 10,new SDFIslandSFGParameter(
                 new[] { new Vector4(300, 100, 100, 0), new Vector4(-300, 100, 100, 0) },
                 new[] { new Vector4(100, 100, 100, 0), new Vector4(100, 100, 100, 0) }

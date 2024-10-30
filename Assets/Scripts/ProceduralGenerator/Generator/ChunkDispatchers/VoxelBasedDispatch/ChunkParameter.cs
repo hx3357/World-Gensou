@@ -6,7 +6,9 @@ namespace ChunkDispatchers.VoxelBasedDispatch
     public class ChunkParameter
     {
         public List<Voxel> voxels = new();
-        public HashSet<Vector3> voxelPositions = new();
+        private HashSet<Vector3> voxelPositions = new();
+        
+        public Voxel rootVoxel;
 
         public void Add(Voxel voxel)
         {

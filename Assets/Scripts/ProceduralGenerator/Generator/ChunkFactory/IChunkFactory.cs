@@ -7,7 +7,7 @@ using UnityEngine;
 public interface IChunkFactory
 {
     
-    public void ProduceChunk(Vector3Int chunkCoord, Material m_chunkMaterial = null, bool m_isForceUpdate = false,object[] SFGParameters = null);
+    public void ProduceChunk(Vector3Int chunkCoord,int chunkResolution, Material m_chunkMaterial = null, bool m_isForceUpdate = false,object[] SFGParameters = null);
 
     public void DeleteChunk(Vector3Int m_coord);
     

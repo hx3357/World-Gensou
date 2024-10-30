@@ -19,40 +19,15 @@ public class Chunk : MonoBehaviour
     public Vector3Int chunkCoord;
     public Vector4[] dotField;
     public Vector3Int dotFieldSize;
+
+    public static float universalChunkSize;
     
-    public static Vector3Int universalChunkSize;
-    public static Vector3 universalCellSize;
+    public int chunkResolution;
     
     /// <summary>
     /// If a chunk is static, chunk exclusive computation will be executed constantly
     /// </summary>
     public bool isStatic = false;
-    
-    /// <summary>
-    /// The Chunk Lod Level corresponding to downsampling rate
-    /// </summary>
-    public enum LODLevel
-    {
-        High,Low,Potato,Culling
-    }
-    
-    public static readonly Dictionary<LODLevel,float> lodDownSampleRateTable = new Dictionary<LODLevel, float>()
-    {
-        {LODLevel.High,2},
-        {LODLevel.Low,3},
-        {LODLevel.Potato,4},
-        {LODLevel.Culling,8}
-    };
-    
-    /// <summary>
-    /// Max view distance of each LOD level
-    /// </summary>
-    public static readonly List<int> lodViewDistanceTable = new List<int>()
-    {
-        3,5,10
-    };
-    
-    public LODLevel lodLevel = LODLevel.High;
     
     public bool isShowVolumeGizmo ;
     public bool isShowDotFieldGizmo = false;
@@ -62,86 +37,70 @@ public class Chunk : MonoBehaviour
     public float normalLength = 1f;
     
     private Mesh mesh;
+    private Dictionary<int,Mesh> lodMeshDict = new Dictionary<int, Mesh>();
     private MeshFilter meshFilter;
     private MeshRenderer meshRenderer;
     private Vector3 volumeSize;
     
     #region Static Field
-    public static void SetUniversalChunkSize(Vector3Int size,Vector3 cellsize)
+    public static void SetUniversalChunkSize(float cellsize)
     {
-        universalChunkSize = size;
-       universalCellSize = cellsize;
+        universalChunkSize = cellsize;
     }
 
     public static Vector3  GetChunkOriginByCoord(Vector3Int coord)
     {
-        return new Vector3(coord.x*universalChunkSize.x*universalCellSize.x,
-            coord.y*universalChunkSize.y*universalCellSize.y,
-            coord.z*universalChunkSize.z*universalCellSize.z);
+        return new Vector3(coord.x*universalChunkSize,
+            coord.y*universalChunkSize,
+            coord.z*universalChunkSize);
     }
     
     public static Vector3 GetChunkCenterByCoord(Vector3Int coord)
     {
-        return GetChunkOriginByCoord(coord) + new Vector3((universalChunkSize.x-1)*universalCellSize.x/2,
-            (universalChunkSize.y-1)*universalCellSize.y/2,
-            (universalChunkSize.z-1)*universalCellSize.z/2);
+        return GetChunkOriginByCoord(coord) + universalChunkSize/2*Vector3.one;
     }
     
     public static Vector3Int GetChunkCoordByPosition(Vector3 position)
     {
-        return new Vector3Int(Mathf.FloorToInt(position.x/universalChunkSize.x/universalCellSize.x),
-            Mathf.FloorToInt(position.y/universalChunkSize.y/universalCellSize.y),
-            Mathf.FloorToInt(position.z/universalChunkSize.z/universalCellSize.z));
-    }
-    
-    /// <summary>
-    /// If chunk is too far away from player, exceeding the distance table, it will return int max value
-    /// </summary>
-    /// <param name="distance"></param>
-    /// <returns></returns>
-    public static LODLevel GetLODLevelByDistance(float distance)
-    {
-        for(int i = 0;i<lodViewDistanceTable.Count;i++)
-        {
-            if(distance <= lodViewDistanceTable[i])
-                return (LODLevel)i;
-        }
-        return (LODLevel)int.MaxValue;
-    }
-    
-    /// <summary>
-    /// 
-    /// </summary>
-    /// <returns>Cell size then chunk size</returns>
-    public static (Vector3, Vector3Int) GetCellAndChunkSize()
-    {
-        return (universalCellSize,universalChunkSize);
+        return new Vector3Int(Mathf.FloorToInt(position.x/universalChunkSize),
+            Mathf.FloorToInt(position.y/universalChunkSize),
+            Mathf.FloorToInt(position.z/universalChunkSize));
     }
 
     public static Vector3 GetWorldSize()
     {
-        return new Vector3(universalChunkSize.x * universalCellSize.x, 
-            universalChunkSize.y * universalCellSize.y, 
-            universalChunkSize.z * universalCellSize.z);
+        return universalChunkSize * Vector3.one;
     }
     
     public static void DrawChunkGizmo(Vector3Int coord)
     {
         Vector3 origin = GetChunkOriginByCoord(coord);
-        Vector3 volumeSize = 
-            new Vector3((universalChunkSize.x) * universalCellSize.x, 
-                (universalChunkSize.y) * universalCellSize.y, 
-                (universalChunkSize.z) * universalCellSize.z);
+        Vector3 volumeSize = universalChunkSize * Vector3.one;
         Gizmos.DrawWireCube(origin + volumeSize/2, volumeSize);
     }
     
     #endregion
     
-    public void SetMesh(Mesh m_mesh)
+    public void SetMeshAndResolution(Mesh m_mesh,int resolution)
     {
+        lodMeshDict[resolution] = m_mesh;
+        chunkResolution = resolution;
         mesh = m_mesh;
         if(meshFilter!=null)
             meshFilter.mesh = mesh;
+    }
+    
+    public bool TrySetResolution(int resolution)
+    {
+        bool isContain = lodMeshDict.ContainsKey(resolution);
+        if (isContain)
+        {
+            chunkResolution = resolution;
+            mesh = lodMeshDict[resolution];
+            if(meshFilter!=null)
+                meshFilter.mesh = mesh;
+        }
+        return isContain;
     }
     
     public void SetMaterial(Material material)
@@ -182,17 +141,21 @@ public class Chunk : MonoBehaviour
         HideMesh();
     }
     
+    public void DestroyChunk()
+    {
+        if(zombieChunkDict.TryGetValue(origin,out Chunk chunk))
+        {
+            zombieChunkDict.Remove(origin);
+        }
+        Destroy(gameObject);
+    }
+    
     public void EnableChunk()
     {
         isZombie = false;
         zombieTimer = 0;
         zombieChunkDict.Remove(origin);
         ShowMesh();
-    }
-    
-    public void SetLODLevel(LODLevel level)
-    {
-        lodLevel = level;
     }
     
     public void SetDotField(Vector4[] m_dotField, Vector3Int m_dotFieldSize)
@@ -251,22 +214,6 @@ public class Chunk : MonoBehaviour
     {
         if(isShowVolumeGizmo)
         {
-            switch (lodLevel)
-            {
-                case LODLevel.High:
-                    Gizmos.color = Color.blue;
-                    break;
-                case LODLevel.Low:
-                    Gizmos.color = Color.yellow;
-                    break;
-                case LODLevel.Potato:
-                    Gizmos.color = Color.red;
-                    break;
-                case LODLevel.Culling:
-                    Gizmos.color = Color.gray;
-                    break;
-                    
-            }
             Gizmos.DrawWireCube(transform.position + volumeSize/2, volumeSize);
         }
 

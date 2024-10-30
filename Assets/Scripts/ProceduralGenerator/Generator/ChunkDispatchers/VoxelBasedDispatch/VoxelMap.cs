@@ -31,6 +31,7 @@ namespace ChunkDispatchers.VoxelBasedDispatch
         public Vector3Int GetVoxelCoordByPosition(Vector3 position) => new Vector3Int(Mathf.FloorToInt((position.x-offset.x)/voxelSize),
             Mathf.FloorToInt((position.y - offset.y)/voxelSize),
             Mathf.FloorToInt((position.z - offset.z)/voxelSize));
+        
     
     }
 }
