@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 namespace ChunkDispatchers.VoxelBasedDispatch
@@ -16,6 +17,15 @@ namespace ChunkDispatchers.VoxelBasedDispatch
                 return;
             voxels.Add(voxel);
             voxelPositions.Add(voxel.center);
+        }
+
+        public void Remove(Voxel voxel)
+        {
+            if (voxelPositions.Contains(voxel.center))
+            {
+                voxelPositions.Remove(voxel.center);
+                voxels.Remove(voxel);
+            }
         }
     }
 }

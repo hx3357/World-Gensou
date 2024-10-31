@@ -131,12 +131,6 @@ public class ObjectPlacer : MonoSingleton<ObjectPlacer>
         objectPool[obj.objectName].Enqueue(obj);
     }
 
-    private int GetObjHash(Vector3 worldPosition, Vector3 objectSize, Vector3 objectRotation, string objectName)
-    {
-        return worldPosition.GetHashCode() + objectSize.GetHashCode() + objectRotation.GetHashCode() +
-               objectName.GetHashCode();
-    }
-
 
     public void PlaceObject(Vector3 worldPosition, Vector3 objectSize, Vector3 objectRotation, string objectName)
     {

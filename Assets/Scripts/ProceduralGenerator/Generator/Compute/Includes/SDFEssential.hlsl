@@ -36,8 +36,7 @@ float sdf_parabola_normalize(float value,float isoLevel)
 }
 
 
-
-//Why unity doesn't support this?????
+//Calculate the normal of the SDF function
 #if 0
 #define CalcNormal(sdfFunc,normal,pos,...) do \
 {\

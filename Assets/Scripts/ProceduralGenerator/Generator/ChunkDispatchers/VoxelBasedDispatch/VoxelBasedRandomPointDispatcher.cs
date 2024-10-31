@@ -30,13 +30,10 @@ namespace ChunkDispatchers.VoxelBasedDispatch
         private Dictionary<Vector3Int, Voxel> baseVoxelDictionary = new();
         private Vector3Int lastPlayerVoxelCoord;
         private bool isFirstTime = true;
-        private Dictionary<Vector3Int,ChunkParameter> chunkCoordMap = new();
+        private readonly Dictionary<Vector3Int,ChunkParameter> chunkCoordMap = new();
         private Action<Voxel> onVoxelGenerated;
         private MyLODManager lodManager = new();
-        
-        private List<Voxel> generatedNewVoxels = new();
-        private List<Voxel> aboutToDestroyVoxels = new();
-
+     
         public VoxelBasedRandomPointDispatcher(float dotCountExpection = 1f,int voxelChunkSize = 7,
             Action<Voxel> m_onVoxelGenerated = null,MyLODManager m_lodManager = null)
         {
@@ -70,9 +67,6 @@ namespace ChunkDispatchers.VoxelBasedDispatch
             
             if (isFirstTime || _playerVoxelCoord != lastPlayerVoxelCoord)
             {
-                generatedNewVoxels.Clear();
-                aboutToDestroyVoxels.Clear();
-                
                 for (int x = -updateVoxelRadius; x <= updateVoxelRadius; x++)
                 for (int y = -updateVoxelRadius; y <= updateVoxelRadius; y++)
                 for (int z = -updateVoxelRadius; z <= updateVoxelRadius; z++)
@@ -81,91 +75,57 @@ namespace ChunkDispatchers.VoxelBasedDispatch
                     Vector3 voxelOrigin = baseVoxelMap.GetVoxelOriginByCoord(voxelCoord);
                     float distance = Vector3Int.Distance(voxelCoord, _playerVoxelCoord);
                     int curChunkResolution = lodManager.GetChunkResolutionByDistance(Vector3.Distance(playerPosition,voxelOrigin));
-                    if (baseVoxelDictionary.TryGetValue(voxelCoord,out Voxel voxel))
+                    if (distance < celledMaxViewedVoxelRadius)
                     {
-                        if(distance >= celledMaxViewedVoxelRadius-2 )
-                        {
-                            voxel.isUpdateVoxel = true;
-                        }
-                        else
-                        {
-                            voxel.isUpdateVoxel = false;
-                        }
-                    }
-                    else
-                    {
-                        if (distance < celledMaxViewedVoxelRadius)
-                        {
-                            Voxel newVoxel = new Voxel(voxelOrigin, baseVoxelMap.voxelSize, 0,
-                                true,null ,initDotExp: dotCountExpection,onGenerate: onVoxelGenerated,_subVoxelExpandFactor: 0.5f);
-                            newVoxel.chunkResolution = curChunkResolution;
-                            baseVoxelDictionary.TryAdd(voxelCoord, newVoxel);
-                        }
+                        Voxel newVoxel = new Voxel(voxelOrigin, baseVoxelMap.voxelSize, 0,
+                            true,null ,initDotExp: dotCountExpection,onGenerate: onVoxelGenerated,_subVoxelExpandFactor: 0.5f);
+                        newVoxel.chunkResolution = curChunkResolution;
+                        newVoxel.CalculateChunkCoords(chunkCoordMap);
+                        baseVoxelDictionary.TryAdd(voxelCoord, newVoxel);
                     }
                 }
-
-                lastPlayerVoxelCoord = _playerVoxelCoord;
 
                 foreach (var voxelCoord in baseVoxelDictionary.Keys.ToArray())
                 {
                     float distance = Vector3Int.Distance(voxelCoord, _playerVoxelCoord);
-                    if (distance > celledMaxViewedVoxelRadius)
+                    if (distance > celledMaxViewedVoxelRadius-1)
                     {
+                        Voxel destroyVoxel = baseVoxelDictionary[voxelCoord];
+                        destroyVoxel.RemoveChunkCoords(chunkCoordMap);
                         baseVoxelDictionary.Remove(voxelCoord);
                     }
-                    // Destroy chunk in edge voxels
-                    else if(!isFirstTime && distance > celledMaxViewedVoxelRadius - 2)
-                    {
-                        if (baseVoxelDictionary.TryGetValue(voxelCoord, out Voxel voxel))
-                        {
-                            aboutToDestroyVoxels.Add(voxel);
-                        }
-                    }
                 }
-            }
-            
-            foreach (var kvPair in baseVoxelDictionary)
-            {
-                Voxel voxel = kvPair.Value;
                 
-                voxel.CalculateChunkCoords(chunkCoordMap);
-                foreach (var chunkCoord in voxel.cachedChunkCoordMap)
-                {
-                    float playerChunkDistance = Vector3.Distance(Chunk.GetChunkCenterByCoord(chunkCoord.Key), playerPosition);
-                    float curViewDistance = EllipticalDistance.GetDistance(playerPosition - Chunk.GetChunkCenterByCoord(chunkCoord.Key),
-                        maxViewDistance * Chunk.GetWorldSize()[0], maxViewDistance * 0.5f * Chunk.GetWorldSize()[0]);
-                    int curChunkResolution = lodManager.GetChunkResolutionByDistance(playerChunkDistance);
-                    
-                    if ((!activeChunks.ContainsKey(chunkCoord.Key) || 
-                         activeChunks.ContainsKey(chunkCoord.Key) && activeChunks[chunkCoord.Key] != curChunkResolution)
-                        &&
-                        playerChunkDistance < curViewDistance)
-                    {
-                        chunksToGenerate.Add((chunkCoord.Key,curChunkResolution));
-                        chunkParametersList.Add(chunkCoord.Value);
-                    }
-                }
+                lastPlayerVoxelCoord = _playerVoxelCoord;
             }
-
-            foreach (var voxel in aboutToDestroyVoxels)
+            
+            
+            Debug.Log($"Current voxel count is {chunkCoordMap.Count}");
+            foreach (var chunkCoord in chunkCoordMap.Keys.ToArray())
             {
-                voxel.CalculateChunkCoords(chunkCoordMap);
-                foreach (var chunkCoord in voxel.cachedChunkCoordMap)
+                float playerChunkDistance = Vector3.Distance(Chunk.GetChunkCenterByCoord(chunkCoord), playerPosition);
+                float curViewDistance = maxViewDistance * Chunk.GetWorldSize()[0];
+                int curChunkResolution = lodManager.GetChunkResolutionByDistance(playerChunkDistance);
+                
+                bool isContain = activeChunks.ContainsKey(chunkCoord);
+                bool isPlayerNearChunk = playerChunkDistance < curViewDistance;
+                 
+                if ((!isContain || activeChunks[chunkCoord] != curChunkResolution)
+                    &&
+                    isPlayerNearChunk)
                 {
-                    float playerChunkDistance = Vector3.Distance(Chunk.GetChunkCenterByCoord(chunkCoord.Key), playerPosition);
-                    float curViewDistance = EllipticalDistance.GetDistance(playerPosition - Chunk.GetChunkCenterByCoord(chunkCoord.Key),
-                        maxViewDistance * Chunk.GetWorldSize()[0], maxViewDistance * 0.5f * Chunk.GetWorldSize()[0]);
-            
-                    if (activeChunks.ContainsKey(chunkCoord.Key) &&
-                        playerChunkDistance > curViewDistance)
-                    {
-                        chunksToDestroy.Add(chunkCoord.Key);
-                    }
+                    chunksToGenerate.Add((chunkCoord,curChunkResolution));
+                    chunkParametersList.Add(chunkCoordMap[chunkCoord]);
+                    continue;
+                }
+                
+                if (isContain && !isPlayerNearChunk)
+                {
+                    chunksToDestroy.Add(chunkCoord);
+                    chunkCoordMap.Remove(chunkCoord);
                 }
             }
             
-            
-
             isFirstTime = false;
             chunkParameters = chunkParametersList.ToArray();
 

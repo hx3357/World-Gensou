@@ -72,7 +72,7 @@ Material:
     - _FoamDepth: 0
     - _FoamFrequency: 20.52
     - _FoamInterval: -2.36
-    - _FoamSize: 2.18
+    - _FoamSize: 30
     - _FoamSpeed: 3.43
     - _FoamStrengh: 2.39
     - _FresnelPower: 1.88

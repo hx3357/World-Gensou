@@ -143,8 +143,8 @@ public class ChunkGroup : MonoBehaviour
       }
       
       float duration = Time.realtimeSinceStartup - startTime;
-      Debug.Log($"Generate {chunksToBeProduced.Count} chunks in {duration} seconds\n " +
-                $"Average: {duration/chunksToBeProduced.Count} seconds per chunk");
+      // Debug.Log($"Generate {chunksToBeProduced.Count} chunks in {duration} seconds\n " +
+      //           $"Average: {duration/chunksToBeProduced.Count} seconds per chunk");
       if (isFirstTime)
       {
          isFirstTime = false;

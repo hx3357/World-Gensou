@@ -10,6 +10,7 @@ public class ObjectTable : ScriptableObject
         public string objectName;
         public GameObject[] gameObjectLOD;
         public float[] viewDistance;
+        public int maxCount;
     }
     
     public PlaceableObjectData[] placeableObjects;

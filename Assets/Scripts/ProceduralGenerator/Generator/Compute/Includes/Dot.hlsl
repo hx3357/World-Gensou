@@ -39,13 +39,15 @@ typedef struct
 {
     float w;
     float3 color_expl;
+    int dot_type;
 } DotExpl;
 
-DotExpl create_dot_expl(const float w,const float3 color)
+DotExpl create_dot_expl(const float w,const float3 color,const int dot_type)
 {
     DotExpl dot;
     dot.w = w;
     dot.color_expl = color;
+    dot.dot_type = dot_type;
     return dot;
 }
 
@@ -53,7 +55,7 @@ Dot convert_dot_expl_to_dot(const DotExpl dot)
 {
     Dot result;
     result.w = dot.w;
-    result.color_impl = get_impl_color(dot.color_expl);
+    result.color_impl = get_impl_color(dot.color_expl, dot.dot_type);
     return result;
 }
 

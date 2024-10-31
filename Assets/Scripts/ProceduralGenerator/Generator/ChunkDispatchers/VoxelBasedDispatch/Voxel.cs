@@ -33,7 +33,8 @@ namespace ChunkDispatchers.VoxelBasedDispatch
         private bool isLeaf => childVoxels == null && isGenerate;
         public readonly bool isRoot;
         
-        public Dictionary<Vector3Int,ChunkParameter> cachedChunkCoordMap;
+        //public Dictionary<Vector3Int,ChunkParameter> cachedChunkCoordMap;
+        private bool isCalculatedChunkCoordMap = false;
 
         private readonly float subVoxelExpandFactor;
         
@@ -42,6 +43,8 @@ namespace ChunkDispatchers.VoxelBasedDispatch
         public bool isUpdateVoxel = false;
         
         private Voxel rootVoxel;
+
+        public int depth;
         
         public Voxel(Vector3 m_worldOrigin, float m_worldSize,int m_dotCountExpection, bool m_isRoot,Voxel m_rootVoxel,
             int depth = 0,float initDotExp = 1f,Voxel m_fatherVoxel = null,int m_voxelIndice = 0,
@@ -57,6 +60,7 @@ namespace ChunkDispatchers.VoxelBasedDispatch
             subVoxelExpandFactor = _subVoxelExpandFactor;
             fatherVoxel = m_fatherVoxel;
             voxelIndice = m_voxelIndice;
+            this.depth = depth;
             
             dotCount = m_isRoot ? PoissonSampler.GetPoissonSampleCount(initDotExp, center) : 
                 m_dotCountExpection;
@@ -196,21 +200,12 @@ namespace ChunkDispatchers.VoxelBasedDispatch
         }
         
 
-        public void CalculateChunkCoords(Dictionary<Vector3Int,ChunkParameter> chunkCoordMap = null)
+        public void CalculateChunkCoords(Dictionary<Vector3Int,ChunkParameter> chunkCoordMap,bool isForce = false)
         {
-            if(isRoot)
-            {
-                if (cachedChunkCoordMap != null)
-                {
-                    return;
-                }
-                cachedChunkCoordMap = new();
-                chunkCoordMap = cachedChunkCoordMap;
-            }
-            else if (chunkCoordMap == null)
-            {
+            if(isCalculatedChunkCoordMap && !isForce)
                 return;
-            }
+            
+            isCalculatedChunkCoordMap = true;
             
             if (isLeaf)
             {
@@ -227,8 +222,18 @@ namespace ChunkDispatchers.VoxelBasedDispatch
                 if (childVoxels == null) return;
                 foreach (var childVoxel in childVoxels)
                 {
-                    childVoxel?.CalculateChunkCoords(cachedChunkCoordMap);
+                    childVoxel?.CalculateChunkCoords(chunkCoordMap);
                 }
+            }
+        }
+
+        public void RemoveChunkCoords(Dictionary<Vector3Int, ChunkParameter> chunkCoordMap)
+        {
+            Dictionary<Vector3Int, ChunkParameter> curChunkCoordMap = new();
+            CalculateChunkCoords(curChunkCoordMap,true);
+            foreach (var chunkCoord in curChunkCoordMap.Keys)
+            {
+                chunkCoordMap.Remove(chunkCoord);
             }
         }
 

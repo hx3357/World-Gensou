@@ -26,7 +26,7 @@ RenderSettings:
   m_AmbientIntensity: 1
   m_AmbientMode: 0
   m_SubtractiveShadowColor: {r: 0.42, g: 0.478, b: 0.627, a: 1}
-  m_SkyboxMaterial: {fileID: 10304, guid: 0000000000000000f000000000000000, type: 0}
+  m_SkyboxMaterial: {fileID: 2100000, guid: 38bce348dd349364bbf84615431a57f2, type: 2}
   m_HaloStrength: 0.5
   m_FlareStrength: 1
   m_FlareFadeSpeed: 3
@@ -37,8 +37,8 @@ RenderSettings:
   m_ReflectionBounces: 1
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
-  m_Sun: {fileID: 0}
-  m_IndirectSpecularColor: {r: 0.18028378, g: 0.22571412, b: 0.30692285, a: 1}
+  m_Sun: {fileID: 1448474071}
+  m_IndirectSpecularColor: {r: 0.1808856, g: 0.22647959, b: 0.30751842, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -97,7 +97,8 @@ LightmapSettings:
     m_ExportTrainingData: 0
     m_TrainingDataDestination: TrainingData
     m_LightProbeSampleCountMultiplier: 4
-  m_LightingDataAsset: {fileID: 0}
+  m_LightingDataAsset: {fileID: 112000000, guid: df00f3379b73129418603359c82b31d6,
+    type: 2}
   m_LightingSettings: {fileID: 0}
 --- !u!196 &4
 NavMeshSettings:
@@ -427,7 +428,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b4b60f39903644f79494f6569bde48ef, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  isDebugChunkDispatcher: 1
+  isDebugChunkDispatcher: 0
 --- !u!4 &692332058
 Transform:
   m_ObjectHideFlags: 0
@@ -1086,7 +1087,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   playerTransform: {fileID: 614957189}
   maxViewDistance: 24
-  chunkSize: 110
+  chunkSize: 100
   cellSize: 4
   chunkMaterial: {fileID: 2100000, guid: 8908da3cb4f92e448a332896de150c86, type: 2}
   downSampleRate: 1

@@ -27,6 +27,7 @@ struct ColorDot
 {
     float4 dot;
     int color_impl;
+    int dot_type;
 };
 
 // Create a RenderTexture with enableRandomWrite flag and set it
@@ -41,7 +42,7 @@ float3 LerpEdgeEnd(const ColorDot v1,const ColorDot v2,out int lerpedImplColor)
     const float3 c1 = get_expl_color(v1.color_impl);
     const float3 c2 = get_expl_color(v2.color_impl);
     const float3 lerpColor = c1*(isoSurface-v2.dot.w)*a + c2*(v1.dot.w-isoSurface)*a;
-    lerpedImplColor = get_impl_color(lerpColor);
+    lerpedImplColor = get_impl_color(lerpColor,v1.dot_type);
     return v1.dot*(isoSurface-v2.dot.w)*a + v2.dot*(v1.dot.w-isoSurface)*a;
 }
 

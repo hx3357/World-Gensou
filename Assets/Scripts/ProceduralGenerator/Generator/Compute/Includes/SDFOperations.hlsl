@@ -111,7 +111,7 @@ float3 sdf_pos_rotate(float3 position,float3 rotation)
 
 float3 sdf_pos_scale(float3 pos,float3 scale)
 {
-   return pos/ scale;
+   return pos / scale;
 }
 
 float3 sdf_pos_transform(float3 pos, float3 origin, float3 rotation, float3 scale)
@@ -138,6 +138,16 @@ float3 sdf_pos_repeat_2D(float3 p, float2 size)
    return p-round(p/float3(size,1))*float3(size,1);
 }
 
+
+float3 sdf_twist(const float3 p,const float k)
+{
+   const float c = cos(k*p.y);
+   const float s = sin(k*p.y);
+   const float2x2 m = float2x2(c,-s,s,c);
+   const float2 xz = mul(m,p.xz);
+   return float3(xz.x,p.y,xz.y);
+}
+
 float island_transform(float x)
 {
    if(x>=0)return 1;
@@ -151,14 +161,6 @@ float3 sdf_pos_islandlize(float3 p,float3 origin,float h)
       return p;
    const float sliceScale = island_transform(p.y-h);
    return float3(p.x-origin.x,0,p.z-origin.z)/sliceScale+float3(origin.x,p.y,origin.z);
-}
-
-DotExpl sdf_postIslandlize(float3 p,DotExpl dot,float h,float isoLevel)
-{
-   if(p.y>h)
-      return dot;
-   dot.w  = (dot.w-isoLevel)*island_transform(p.y-h) + isoLevel;
-   return dot;
 }
 
 #endif

@@ -123,14 +123,16 @@ public class ChunkGroupDispatcher : MonoBehaviour
                         // Generate lake island
                         islandType = 2;
                         ObjectPlacer.Instance.PlaceObject(
-                            currentVoxel.center - currentVoxel.worldSize * 0.09f * Vector3.up,
+                            currentVoxel.center - currentVoxel.worldSize * 0.1f * Vector3.up,
                             new Vector3(currentVoxel.worldSize * 0.7f, currentVoxel.worldSize / 4 * 0.3f,
                                 currentVoxel.worldSize * 0.7f),
                             Vector3.zero, "Lake");
                     }
-                }
-                else
+                }else if (currentVoxel.depth >= 2)
                 {
+                    if(currentVoxel.center.GetHashCode()%10000/10000f < 0.01f)
+                        islandType = 3;
+                    else
                     // Generate Upper Island
                     islandType = ((currentVoxel.voxelIndice & 4) >> 2) == 1 ? 1 : islandType;
                 }
