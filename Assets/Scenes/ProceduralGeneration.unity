@@ -135,6 +135,8 @@ GameObject:
   - component: {fileID: 64519299}
   - component: {fileID: 64519298}
   - component: {fileID: 64519300}
+  - component: {fileID: 64519302}
+  - component: {fileID: 64519301}
   m_Layer: 0
   m_Name: GameManager
   m_TagString: Untagged
@@ -181,6 +183,30 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 8976821bd7d942c99dbf07c7c70e0dbf, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &64519301
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 64519297}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a1385af44ff64b3792acd07e080c093b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &64519302
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 64519297}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 54ceef17b94e4f219078e33ce56e8a55, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
 --- !u!1 &233662447
@@ -905,13 +931,13 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1448474070}
   serializedVersion: 2
-  m_LocalRotation: {x: 0.40821788, y: -0.23456968, z: 0.10938163, w: 0.8754261}
+  m_LocalRotation: {x: 0.37408492, y: -0.23016743, z: 0.11836429, w: 0.8905467}
   m_LocalPosition: {x: 0, y: 3, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 50, y: -30, z: 0}
+  m_LocalEulerAnglesHint: {x: 46.118, y: -27.623, z: 3.193}
 --- !u!114 &1448474073
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1089,7 +1115,7 @@ MonoBehaviour:
   maxViewDistance: 24
   chunkSize: 100
   cellSize: 4
-  chunkMaterial: {fileID: 2100000, guid: 8908da3cb4f92e448a332896de150c86, type: 2}
+  chunkMaterial: {fileID: 2100000, guid: bab55b58be1159b429eff420517a7252, type: 2}
   downSampleRate: 1
   isoSurface: 0.5
   lerpParam: 0.57

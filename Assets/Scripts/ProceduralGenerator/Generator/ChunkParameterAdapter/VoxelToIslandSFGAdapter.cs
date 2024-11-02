@@ -4,13 +4,6 @@ using UnityEngine;
 
 public static class VoxelToIslandSFGAdapter
 {
-    private static float lakePossibility = 1;
-
-    public static void SetParameter(float possibility)
-    {
-        lakePossibility = possibility;
-    }
-
     public static object[] ConvertToSFGParameters(object[] parameters)
     {
         return Array.ConvertAll(parameters, x =>

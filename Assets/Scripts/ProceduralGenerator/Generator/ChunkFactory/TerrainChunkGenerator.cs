@@ -10,10 +10,14 @@ using Unity.Mathematics;
 using Unity.Profiling;
 using UnityEditor;
 using UnityEngine.Rendering;
+using UnityEngine.UI;
 using Debug = UnityEngine.Debug;
 using Random = Unity.Mathematics.Random;
 
-public class McChunkFactory : MonoBehaviour, IChunkFactory
+/// <summary>
+/// A generator that produces terrain chunks and placeable objects using marching cube
+/// </summary>
+public class TerrainChunkGenerator : MonoBehaviour, IChunkGenerator
 {
     private Material chunkMaterial;
 
@@ -29,6 +33,8 @@ public class McChunkFactory : MonoBehaviour, IChunkFactory
     private IScalerFieldGenerator scalerFieldGenerator;
 
     private Material defaultChunkMaterial;
+    
+    private readonly TerrainPlaceableObjectParameter _curTerrainPlaceableObjectParameter = new (){grassDensity = GrassManager.grassDensity};
 
 
     private static readonly int CellCount = Shader.PropertyToID("cellCount");
@@ -55,72 +61,8 @@ public class McChunkFactory : MonoBehaviour, IChunkFactory
             Mathf.CeilToInt(m_dotFieldSize.y / (float)numofThreads),
             Mathf.CeilToInt(m_dotFieldSize.z / (float)numofThreads));
     }
-
-    [BurstCompile]
-    struct GenerateMeshJob : IJob
-    {
-        [ReadOnly] public NativeArray<Triangle> triangles;
-        public NativeList<float3> vertices;
-        public NativeList<Color32> vertColors;
-        public NativeList<int> indices;
-        public NativeHashMap<float3, int> vertexIndexMap;
-
-        private Color32 ExtractImplColor(int implColor)
-        {
-            return new Color32((byte)(implColor & 0xFF), (byte)((implColor >> 8) & 0xFF),
-                (byte)((implColor >> 16) & 0xFF), (byte)((implColor >> 24) & 0xFF));
-        }
-
-        private Color32 ExtractImplColor(int implColor, byte a)
-        {
-            return new Color32((byte)(implColor & 0xFF), (byte)((implColor >> 8) & 0xFF),
-                (byte)((implColor >> 16) & 0xFF), a);
-        }
-
-        public void Execute()
-        {
-            int currentVertexIndex = 0;
-            foreach (var triangle in triangles)
-            {
-                if (!vertexIndexMap.ContainsKey(triangle.p1))
-                {
-                    vertexIndexMap.Add(triangle.p1, currentVertexIndex);
-                    vertices.Add(triangle.p1);
-                    vertColors.Add(ExtractImplColor(triangle.implColor1, 255));
-                    currentVertexIndex++;
-                }
-
-                indices.Add(vertexIndexMap[triangle.p1]);
-                if (!vertexIndexMap.ContainsKey(triangle.p2))
-                {
-                    vertexIndexMap.Add(triangle.p2, currentVertexIndex);
-                    vertices.Add(triangle.p2);
-                    vertColors.Add(ExtractImplColor(triangle.implColor2, 255));
-                    currentVertexIndex++;
-                }
-
-                indices.Add(vertexIndexMap[triangle.p2]);
-                if (!vertexIndexMap.ContainsKey(triangle.p3))
-                {
-                    vertexIndexMap.Add(triangle.p3, currentVertexIndex);
-                    vertices.Add(triangle.p3);
-                    vertColors.Add(ExtractImplColor(triangle.implColor3, 255));
-                    currentVertexIndex++;
-                }
-
-                indices.Add(vertexIndexMap[triangle.p3]);
-            }
-        }
-        
-        public void Dispose()
-        {
-            vertices.Dispose();
-            indices.Dispose();
-            vertColors.Dispose();
-            vertexIndexMap.Dispose();
-            triangles.Dispose();
-        }
-    }
+    
+    
 
     // IEnumerator ProduceChunkCoroutineWithDotfieldOnCpu(Vector3 m_origin, Material m_chunkMaterial = null)
     // {
@@ -424,13 +366,16 @@ public class McChunkFactory : MonoBehaviour, IChunkFactory
         triangleCountBuffer.Release();
 
         //Generate Mesh
-        GenerateMeshJob job = new()
+        GenerateTerrainJob job = new()
         {
+            chunkWorldPosition = _origin,
             triangles = new NativeArray<Triangle>(_triangles, Allocator.TempJob),
             vertices = new(0, Allocator.TempJob),
             indices = new(0, Allocator.TempJob),
             vertexIndexMap = new(_triangles.Length, Allocator.TempJob),
-            vertColors = new(0, Allocator.TempJob)
+            TerrainPlaceableObjectParameter = _curTerrainPlaceableObjectParameter,
+            vertColors = new(0, Allocator.TempJob),
+            TerrainPlaceableObjectDataBiltable = new(0)
         };
 
         JobHandle handle = job.Schedule();
@@ -446,9 +391,16 @@ public class McChunkFactory : MonoBehaviour, IChunkFactory
         Vector3[] vertices = new Vector3[job.vertices.Length];
         int[] indices = new int[job.indices.Length];
         Color32[] vertColors = new Color32[job.vertColors.Length];
+        
         job.vertices.AsArray().Reinterpret<Vector3>().CopyTo(vertices);
         job.indices.AsArray().CopyTo(indices);
         job.vertColors.AsArray().CopyTo(vertColors);
+        
+        ProfilerMarker terrainPlaceableObjectDataMarker = new ProfilerMarker("TerrainPlaceableObjectData");
+        
+        
+        TerrainPlaceableObjectData terrainPlaceableObjectData = job.TerrainPlaceableObjectDataBiltable.GetPlaceableObjectData();
+        terrainPlaceableObjectData.SubmitPlaceableObjectData();
         
         job.Dispose();
 
@@ -480,14 +432,13 @@ public class McChunkFactory : MonoBehaviour, IChunkFactory
         chunk.chunkResolution = _chunkSize.x;
         chunkDict.TryAdd(m_origin, chunk);
         currentProducingChunkSet.Remove(_origin);
-        Debug.Log("Chunk Produced");
     }
     
     class ProducingChunkToken
     {
         public Chunk chunk;
         public Stack<IDisposable> disposables = new();
-        public GenerateMeshJob job;
+        public GenerateTerrainJob job;
         public JobHandle handle;
     }
 
@@ -533,7 +484,6 @@ public class McChunkFactory : MonoBehaviour, IChunkFactory
     {
         if (currentProducingChunkSet.ContainsKey(m_origin))
         {
-            Debug.LogWarning("Chunk is producing");
             return;
         }
         
@@ -563,16 +513,10 @@ public class McChunkFactory : MonoBehaviour, IChunkFactory
             
             if (!m_isForceUpdate)
             {
-                Debug.LogWarning("Chunk already exists");
                 return;
             }
         }
         
-        // origin = m_origin;
-        // chunkResolution = m_chunkResolution;
-        // cellSize = m_cellSize;
-        // originDotFieldSize = dotFieldSize = new Vector3Int(m_chunkResolution.x + 1, m_chunkResolution.y + 1, m_chunkResolution.z + 1);
-        // parameters = m_parameters;
         ProducingChunkToken token = new ProducingChunkToken();
         currentProducingChunkSet[m_origin] = token;
         StartCoroutine(ProduceChunkCoroutine(m_origin,m_chunkResolution,m_cellSize, 

@@ -70,9 +70,10 @@ public class GPUScalerFieldGenerator : IScalerFieldGenerator
         cs.SetVector(CellSize, cellsize);
         cs.SetBuffer(kernel, OutputPoints, scalerFieldRequestData.buffers[0]);
         SetComputeShaderParameters(cs,scalerFieldRequestData,parameters);
-        cs.Dispatch(kernel, Mathf.CeilToInt(dotFieldSize.x / 8.0f), 
-            Mathf.CeilToInt(dotFieldSize.y / 8.0f), 
-            Mathf.CeilToInt(dotFieldSize.z / 8.0f));
+        cs.GetKernelThreadGroupSizes(kernel, out var x, out var y, out var z);
+        cs.Dispatch(kernel, Mathf.CeilToInt(dotFieldSize.x / (float)x), 
+            Mathf.CeilToInt(dotFieldSize.y / (float)y), 
+            Mathf.CeilToInt(dotFieldSize.z / (float)z));
     }
     
     protected virtual void SetComputeShaderParameters(ComputeShader m_cs,ScalerFieldRequestData scalerFieldRequestData,object[] parameters){ }

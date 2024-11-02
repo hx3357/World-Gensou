@@ -108,7 +108,7 @@ float island_basic_shape_sdf(float3 pos, float3 origin, float baseRadius,float h
 
 DotExpl normal_top_face_sdf(float3 pos, float3 islandPos,float3 origin, float baseRadius,float height, float3 color,float maxRadius,bool isIslandlize)
 {
-    DotExpl top_face = sdf_plane(islandPos, origin.y , GRASS*(1-0.6*ClassicNoise(0.002*pos)));
+    DotExpl top_face = sdf_plane(islandPos, origin.y , GRASS*(1-0.6*ClassicNoise(0.002*pos)),DOT_TYPE_GRASS);
     top_face.w -= clamp((maxRadius* 1.2  - length(islandPos-origin))/maxRadius,0.1,1)
                     * height/2 * lerp(-0.2,0.5,fractalNoise( 0.003 * pos ,6,2,0.5));
     return top_face;
@@ -122,7 +122,7 @@ DotExpl lake_top_face_sdf(float3 pos, float3 islandPos,float3 origin, float base
         lerp(SAND*(1-0.4*ClassicNoise(0.002*pos)),ROCK,clamp((minatoBound + 0.5)/(0.1*maxRadius),0,1))
         );
 
-    top_face.w -= lerp(0.05 * height/2*(fractalNoise( 0.005 * pos ,6,2,0.5))
+    top_face.w -= lerp(0.05 * height*(fractalNoise( 0.01 * pos ,2,2,0.5)-0.5)
         ,4 * height/2 * lerp(-0.6,0.4,fractalNoise( 0.002 * pos ,6,2.1,0.5)),
         clamp((minatoBound + 0.5)/(0.2*maxRadius),0,1));
     

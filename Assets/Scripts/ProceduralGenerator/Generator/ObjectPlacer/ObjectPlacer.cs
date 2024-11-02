@@ -1,10 +1,13 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Assertions;
 
 public class ObjectPlacer : MonoSingleton<ObjectPlacer>
 {
+    public Dictionary<string,ITerrainObjectManager> TerrainObjectManagersTable;
     public ObjectTable objectTable;
+    
     public Transform player;
 
     // Key: objectName, Value: inactive objects
@@ -98,6 +101,14 @@ public class ObjectPlacer : MonoSingleton<ObjectPlacer>
         parentObj = new GameObject("PlaceableObjects");
     }
 
+    public void Start()
+    {
+        TerrainObjectManagersTable = new Dictionary<string, ITerrainObjectManager>()
+        {
+            {"Grass",GrassManager.Instance}
+        };
+    }
+
     PlaceableObject GetPlaceableObject(string objectName)
     {
         Assert.IsTrue(objectPool.ContainsKey(objectName),
@@ -134,13 +145,20 @@ public class ObjectPlacer : MonoSingleton<ObjectPlacer>
 
     public void PlaceObject(Vector3 worldPosition, Vector3 objectSize, Vector3 objectRotation, string objectName)
     {
+        if(TerrainObjectManagersTable.TryGetValue(objectName, out var terrainObjectManager))
+        {
+            terrainObjectManager.PlaceObject(worldPosition, objectSize, objectRotation);
+            return;
+        }
+        
         foreach (var placeableObject in objectTable.placeableObjects)
         {
             if (placeableObject.objectName != objectName) continue;
-            if(Vector3.Distance(worldPosition, player.position) > placeableObject.viewDistance[^1] * Chunk.GetWorldSize()[0])
+            if (Vector3.Distance(worldPosition, player.position) >
+                placeableObject.viewDistance[^1] * Chunk.GetWorldSize()[0])
                 return;
         }
-        
+
         PlaceableObject newPlaceableObject = GetPlaceableObject(objectName);
         newPlaceableObject.SetTransform(worldPosition, objectSize, objectRotation);
         newPlaceableObject.SetLOD(player.position);
@@ -149,6 +167,11 @@ public class ObjectPlacer : MonoSingleton<ObjectPlacer>
 
     public void UpdatePlacer()
     {
+        foreach (var terrainObjectManager in TerrainObjectManagersTable)
+        {
+            terrainObjectManager.Value.UpdateObjects(player.position);
+        }
+        
         List<PlaceableObject> objectsToDisable = new();
         
         foreach (var obj in currentObjects)

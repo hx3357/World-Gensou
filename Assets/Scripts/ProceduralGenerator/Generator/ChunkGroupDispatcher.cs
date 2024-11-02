@@ -88,14 +88,14 @@ public class ChunkGroupDispatcher : MonoBehaviour
             new SDFIslandScalerFieldGenerator(sdfCS, seed, isoSurface);
 
         //Set up the chunk factory
-        IChunkFactory chunkFactory0 = gameObject.AddComponent<McChunkFactory>();
+        IChunkGenerator chunkFactory0 = gameObject.AddComponent<TerrainChunkGenerator>();
         chunkFactory0.SetParameters(sdfIslandScalerFieldGenerator, downSampleRate, downSampleCS);
-        if (chunkFactory0 is McChunkFactory value0)
+        if (chunkFactory0 is TerrainChunkGenerator value0)
             value0.SetExclusiveParameters(marchingCubeCS, isoSurface, lerpParam);
 
-        IChunkFactory chunkFactory1 = gameObject.AddComponent<McChunkFactory>();
+        IChunkGenerator chunkFactory1 = gameObject.AddComponent<TerrainChunkGenerator>();
         chunkFactory1.SetParameters(perlinNoiseScalerFieldGenerator, downSampleRate, downSampleCS);
-        if (chunkFactory1 is McChunkFactory value1)
+        if (chunkFactory1 is TerrainChunkGenerator value1)
             value1.SetExclusiveParameters(marchingCubeCS, isoSurface, lerpParam);
 
         ChunkGroup chunkGroup0, chunkGroup1;

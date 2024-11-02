@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using UnityEngine;
 
 
-public interface IChunkFactory
+public interface IChunkGenerator
 {
     
     public void ProduceChunk(Vector3Int chunkCoord,int chunkResolution, Material m_chunkMaterial = null, bool m_isForceUpdate = false,object[] SFGParameters = null);

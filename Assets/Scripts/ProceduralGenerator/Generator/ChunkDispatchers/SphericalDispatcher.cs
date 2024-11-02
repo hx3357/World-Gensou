@@ -17,15 +17,14 @@ public class SphericalDispatcher : IChunkDispatcher
         chunkResolution = m_chunkResolution;
     }
     
-    public void DispatchChunks(in SurroundBox chunkGroupSurroundBox,in Dictionary<Vector3Int,int> activeChunks,
-        in Vector3 playerPosition,in float maxViewDistance, 
+    public void DispatchChunks( SurroundBox chunkGroupSurroundBox, Dictionary<Vector3Int,int> activeChunks,
+         Vector3 playerPosition, float maxViewDistance, 
         ref List<(Vector3Int,int)> chunksToGenerate, ref List<Vector3Int> chunksToDestroy, ref object[] chunkParameters)
     {
         Vector3Int _playerChunkCoord = Chunk.GetChunkCoordByPosition(playerPosition);
         int celledMaxViewDistance = Mathf.CeilToInt(maxViewDistance)+1;
         chunksToGenerate = new List<(Vector3Int,int)>();
         chunksToDestroy = new List<Vector3Int>();
-        chunkParameters = null;
       
         for(int x = -celledMaxViewDistance;x<= celledMaxViewDistance;x++)
         for(int y = -celledMaxViewDistance;y<= celledMaxViewDistance;y++)

@@ -109,11 +109,11 @@ Material:
     - _DstBlend: 0
     - _DstBlendAlpha: 0
     - _EnvironmentReflections: 1
-    - _FogSmoothFactor: 261.6
+    - _FogSmoothFactor: 30
     - _GlossMapScale: 0
     - _Glossiness: 0
     - _GlossyReflections: 0
-    - _MaxViewDepth: 567.5
+    - _MaxViewDepth: 2200
     - _Metallic: 0
     - _OcclusionStrength: 1
     - _Parallax: 0.005

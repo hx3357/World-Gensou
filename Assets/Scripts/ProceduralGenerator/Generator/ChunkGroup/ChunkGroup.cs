@@ -18,13 +18,13 @@ public class ChunkGroup : MonoBehaviour
    private IScalerFieldGenerator scalerFieldGenerator;
    protected object[] scalerFieldParameters;
    
-   protected IChunkFactory chunkFactory;
+   protected IChunkGenerator ChunkGenerator;
    
    // Chunk coord -> resolution
    protected Dictionary<Vector3Int,int> activeChunks {get; private set;} = new ();
    protected SurroundBox surroundBox;
 
-   protected PerlinNoise3D perlinNoise3D;
+   private PerlinNoise3D perlinNoise3D;
    
    private int firstTimeChunksNumPerGenerate = 50;
    private int firstTimeChunksGenerationInterval = 1;
@@ -39,13 +39,11 @@ public class ChunkGroup : MonoBehaviour
    
    private ChunkPatameterAdapter chunkPatameterAdapter;
    
-   private int garbageCollectionInterval = 10;
-   private int garbageCollectionCounter = 0;
 
    /// <summary>
    /// 
    /// </summary>
-   /// <param name="m_chunkFactory"></param>
+   /// <param name="mChunkGenerator"></param>
    /// <param name="m_chunkDispatcher"></param>
    /// <param name="m_maxViewDistance"></param>
    /// <param name="m_chunkMaterial"></param>
@@ -54,14 +52,14 @@ public class ChunkGroup : MonoBehaviour
    /// <param name="m_garbageCollectionInterval">Interval for distroying the garbage chunks in the scene</param>
    /// <param name="parameters">Parameters for scalar field generator</param>
    /// <param name="chunkDispatcher"></param>
-   public virtual void Initialize(IChunkFactory m_chunkFactory,
+   public virtual void Initialize(IChunkGenerator mChunkGenerator,
       IChunkDispatcher m_chunkDispatcher,
-      int m_maxViewDistance, Material m_chunkMaterial, SurroundBox m_surroundBox, int m_seed,int m_garbageCollectionInterval = 10,
+      int m_maxViewDistance, Material m_chunkMaterial, SurroundBox m_surroundBox, int m_seed,
       params object[] parameters)
    {
       chunkDispatcher = m_chunkDispatcher;
-      scalerFieldGenerator = m_chunkFactory.GetScalerFieldGenerator();
-      chunkFactory = m_chunkFactory;
+      scalerFieldGenerator = mChunkGenerator.GetScalerFieldGenerator();
+      ChunkGenerator = mChunkGenerator;
       surroundBox = m_surroundBox ?? SurroundBox.InfiniteSurroundBox;
       maxViewDistance = m_maxViewDistance;
       chunkMaterial = m_chunkMaterial;
@@ -70,7 +68,6 @@ public class ChunkGroup : MonoBehaviour
       perlinNoise3D = new PerlinNoise3D();
       perlinNoise3D.SetRandomSeed(seed);
       chunkPatameterAdapter = new ChunkPatameterAdapter(chunkDispatcher,scalerFieldGenerator);
-      garbageCollectionInterval = m_garbageCollectionInterval;
    }
    
    protected virtual void UpdateChunks(Vector3 playerPosition,float m_maxViewDistance)
@@ -90,25 +87,11 @@ public class ChunkGroup : MonoBehaviour
       //Convert chunk parameters to SFG parameters
       chunkParameters = chunkPatameterAdapter.ConvertToSFGParameters(chunkParameters);
       
-      //Garbage collection
-      
-      // if(garbageCollectionCounter++ >= garbageCollectionInterval)
-      // {
-      //    garbageCollectionCounter = 0;
-      //    foreach (var chunk in activeChunks)
-      //    {
-      //       if (chunksToGenerate.Contains(chunk) || 
-      //           Vector3.Distance(playerPosition, Chunk.GetChunkOriginByCoord(chunk)) <= m_maxViewDistance * Chunk.GetWorldSize()[0])
-      //          continue;
-      //       chunksToDestroy.Add(chunk);
-      //    }
-      // }
-      
       if(chunksToDestroy != null)
          foreach (var chunk in chunksToDestroy)
          {
             activeChunks.Remove(chunk);
-            chunkFactory.DeleteChunk(chunk);
+            ChunkGenerator.DeleteChunk(chunk);
          }
       
       StartCoroutine(AsyncLoadChunksCoroutine(chunksToGenerate,chunkParameters));
@@ -134,7 +117,7 @@ public class ChunkGroup : MonoBehaviour
          for(int j=0;j<chunksNumPerGenerate&&i<chunksToBeProduced.Count;j++)
          {
             activeChunks.TryAdd(chunksToBeProduced[i].Item1,chunksToBeProduced[i].Item2);
-            chunkFactory.ProduceChunk(chunksToBeProduced[i].Item1,chunksToBeProduced[i].Item2 ,m_chunkMaterial: chunkMaterial,
+            ChunkGenerator.ProduceChunk(chunksToBeProduced[i].Item1,chunksToBeProduced[i].Item2 ,m_chunkMaterial: chunkMaterial,
                SFGParameters: m_parameters == null ? scalerFieldParameters :new []{ m_parameters[i]},m_isForceUpdate:false);
             i++;
          }
@@ -143,8 +126,10 @@ public class ChunkGroup : MonoBehaviour
       }
       
       float duration = Time.realtimeSinceStartup - startTime;
-      // Debug.Log($"Generate {chunksToBeProduced.Count} chunks in {duration} seconds\n " +
-      //           $"Average: {duration/chunksToBeProduced.Count} seconds per chunk");
+      
+      Debug.Log($"Generate {chunksToBeProduced.Count} chunks in {duration} seconds\n " +
+                $"Average: {duration/chunksToBeProduced.Count} seconds per chunk");
+      
       if (isFirstTime)
       {
          isFirstTime = false;

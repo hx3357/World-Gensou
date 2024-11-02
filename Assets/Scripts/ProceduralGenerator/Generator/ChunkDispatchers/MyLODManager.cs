@@ -5,8 +5,8 @@ public class MyLODManager
     //Default LOD configuration
     private readonly Dictionary<float,int> distanceToChunkResolution = new()
     {
-        {1000,31},
-        {1500,15},
+        {600,31},
+        {1200,15},
     };
     
     private int lowestResolution = 7;

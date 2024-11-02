@@ -13,10 +13,12 @@ DotExpl colored_union(DotExpl a, DotExpl b)
    {
       result.w = a.w;
       result.color_expl = a.color_expl;
+      result.dot_type = a.dot_type;
    }else
    {
       result.w = b.w;
       result.color_expl = b.color_expl;
+      result.dot_type = b.dot_type;
    }
    return result;
 }
@@ -28,10 +30,12 @@ DotExpl colored_intersection(DotExpl a, DotExpl b)
    {
       result.w = a.w;
       result.color_expl = a.color_expl;
+      result.dot_type = a.dot_type;
    }else
    {
       result.w = b.w;
       result.color_expl = b.color_expl;
+      result.dot_type = b.dot_type;
    }
    return result;
 }
@@ -42,6 +46,7 @@ DotExpl smooth_colored_union(DotExpl a, DotExpl b, float k)
    const float h = clamp(0.5 + 0.5 * (b.w - a.w) / k, 0.0, 1.0);
    result.w = lerp(b.w, a.w, h) - k * h * (1.0 - h);
    result.color_expl = lerp(b.color_expl, a.color_expl, h);
+   result.dot_type = h < 0.5 ? b.dot_type : a.dot_type;
    return result;
 }
 
@@ -51,6 +56,7 @@ DotExpl smooth_colored_intersection(DotExpl a, DotExpl b, float k)
    const float h = clamp(0.5 - 0.5 * (b.w - a.w) / k, 0.0, 1.0);
    result.w = lerp(b.w, a.w, h) + k * h * (1.0 - h);
    result.color_expl = lerp(b.color_expl, a.color_expl, h);
+   result.dot_type = h < 0.5 ? b.dot_type : a.dot_type;
    return result;
 }
 
@@ -60,6 +66,7 @@ DotExpl smooth_colored_subtraction(DotExpl a, DotExpl b, float k)
    const float h = clamp(0.5 - 0.5 * (a.w + b.w) / k, 0.0, 1.0);
    result.w = lerp(a.w, -b.w, h) + k * h * (1.0 - h);
    result.color_expl =  lerp(a.color_expl, b.color_expl, h);
+   result.dot_type = h < 0.5 ? a.dot_type : b.dot_type;
    return result;
 }
 

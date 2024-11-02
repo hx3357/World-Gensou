@@ -3,7 +3,12 @@
 
 #include "CustomColor.hlsl"
 
-#define INIT_DOT_EXPL {SDF_MAX,float3(1,1,1)};
+
+#define DOT_TYPE_NORMAL 0
+#define DOT_TYPE_GRASS 1
+
+#define INIT_DOT_EXPL {SDF_MAX,float3(1,1,1),DOT_TYPE_NORMAL};
+
 
 typedef struct
 {
@@ -42,7 +47,7 @@ typedef struct
     int dot_type;
 } DotExpl;
 
-DotExpl create_dot_expl(const float w,const float3 color,const int dot_type)
+DotExpl create_dot_expl(const float w,const float3 color,const int dot_type = 0)
 {
     DotExpl dot;
     dot.w = w;

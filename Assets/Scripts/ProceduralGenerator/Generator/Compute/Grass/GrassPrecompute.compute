@@ -1,0 +1,60 @@
+// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel CSMain
+
+#include "../Noise/FastSnoise.hlsl"
+#include "../Includes/QuaternionEssential.hlsl"
+
+struct GrassInput
+{
+    float3 position;
+};
+
+struct GrassOutput
+{
+    float3 position;
+    float height;
+    float width;
+    float darkness;
+    float angle_dir;
+    float bend;
+};
+
+int grass_count;
+// float time;
+// float wind_direction_angle;
+// float wind_strength;
+// float swing_speed;
+// float swing_strength;
+
+StructuredBuffer<GrassInput> input_grass_buffer;
+RWStructuredBuffer<GrassOutput> output_grass_buffer;
+
+[numthreads(64,1,1)]
+void CSMain(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= grass_count)
+    {
+        return;
+    }
+
+    const float3 position = input_grass_buffer[id.x].position;
+
+    // // Random swing
+    // const float3 swing = swing_strength * float3(
+    //     0.5 * (f_snoise(swing_speed * (position * 0.1 + time)) - 0.5),
+    //     0.5 * (f_snoise(swing_speed * (position * 0.1 + time + 100)) - 0.5),
+    //     0.5 * (f_snoise(swing_speed * (position * 0.1 + time + 200)) - 0.5)
+    // );
+    //
+    //
+    // const float3 wind_direction = float3(cos(wind_direction_angle), 0, sin(wind_direction_angle));
+    // const float3 wind = wind_direction * wind_strength;
+    GrassOutput output;
+    output.position = position;
+    output.height = 1.0;
+    output.width = 1;
+    output.darkness = 0.5;
+    output.angle_dir = 0;
+    output.bend = 0;
+    output_grass_buffer[id.x] = output;
+}

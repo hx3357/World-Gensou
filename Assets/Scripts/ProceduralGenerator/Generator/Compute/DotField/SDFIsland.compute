@@ -1,7 +1,7 @@
 // Each #kernel tells which function to compile; you can have many kernels
 #pragma kernel CSMain
 
-#define ISLAND_COUNT 10
+#define ISLAND_COUNT 5
 
 #include "../Includes/Utility.hlsl"
 #include "../Includes/WorldSDF/DuckWorld.hlsl"

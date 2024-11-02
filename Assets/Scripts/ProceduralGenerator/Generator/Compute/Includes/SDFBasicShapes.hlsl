@@ -7,11 +7,12 @@
 #include "Dot.hlsl"
 #include "CustomColor.hlsl"
 
-DotExpl sdf_sphere(const float3 p, const float r, const float3 color)
+DotExpl sdf_sphere(const float3 p, const float r, const float3 color,const int dot_type = DOT_TYPE_NORMAL)
 {
     DotExpl dot;
     dot.w = length(p) - r;
     dot.color_expl = color;
+    dot.dot_type = dot_type;
     return dot;
 }
 
@@ -20,12 +21,13 @@ float sdf_sphere(const float3 p, const float r)
     return length(p) - r;
 }
 
-DotExpl sdf_cylinder(const float3 p, const float r, const float h, const float3 color)
+DotExpl sdf_cylinder(const float3 p, const float r, const float h, const float3 color,const int dot_type = DOT_TYPE_NORMAL)
 {
     const float2 d = abs(float2(length(p.xz), p.y)) - float2(r, h);
     DotExpl dot;
     dot.w = min(max(d.x, d.y), 0.0) + length(max(d, 0.0));
     dot.color_expl = color;
+    dot.dot_type = dot_type;
     return dot;
 }
 
@@ -35,9 +37,9 @@ float sdf_cylinder(const float3 p, const float r, const float h)
     return min(max(d.x, d.y), 0.0) + length(max(d, 0.0));
 }
 
-DotExpl sdf_inf_cylinder(const float3 p, const float r, const float3 color)
+DotExpl sdf_inf_cylinder(const float3 p, const float r, const float3 color,const int dot_type = DOT_TYPE_NORMAL)
 {
-    return create_dot_expl(length(p.xz) - r, color);
+    return create_dot_expl(length(p.xz) - r, color, dot_type);
 }
 
 float sdf_inf_cylinder(const float3 p, const float r)
@@ -45,9 +47,9 @@ float sdf_inf_cylinder(const float3 p, const float r)
     return length(p.xz) - r;
 }
 
-DotExpl sdf_plane(const float3 p,const float h, const float3 color)
+DotExpl sdf_plane(const float3 p,const float h, const float3 color,const int dot_type = DOT_TYPE_NORMAL)
 {
-    return create_dot_expl(p.y - h, color);
+    return create_dot_expl(p.y - h, color,dot_type);
 }
 
 float sdf_plane(const float3 p,const float h)
