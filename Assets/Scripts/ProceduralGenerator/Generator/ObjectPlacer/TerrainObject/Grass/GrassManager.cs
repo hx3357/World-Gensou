@@ -1,23 +1,28 @@
 ﻿using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 public class GrassManager : MonoSingleton<GrassManager>, ITerrainObjectManager
 {
-    public static readonly float grassDensity = 0.1f;
+    public static readonly float grassDensity = 0.3f;
     public bool isGrassEnabled = true;
     
     private readonly List<Vector3> visibleGrassSet = new();
-    private HashSet<Vector3> invisibleGrassSet = new();
-    private float maxViewDistance = 200;
-    private float maxExistDistance = 700;
+    private float maxViewDistance = 220;
     private Vector3 lastPlayerPos;
+    private IGrassRenderer grassRenderer;
+
+    private void Start()
+    {
+        grassRenderer = GrassRenderer.Instance;
+    }
 
     private void Update()
     {
         if (isGrassEnabled)
         {
-            GrassRenderer.Instance.DrawGrass(visibleGrassSet.ToArray());
+            grassRenderer.DrawGrass(visibleGrassSet.ToArray(),lastPlayerPos);
         }   
     }
 
@@ -27,29 +32,18 @@ public class GrassManager : MonoSingleton<GrassManager>, ITerrainObjectManager
         if (distance < maxViewDistance)
         {
             visibleGrassSet.Add(worldPosition);
-        }else if (distance < maxExistDistance)
-        {
-            invisibleGrassSet.Add(worldPosition);
         }
     }
 
     public void UpdateObjects(Vector3 playerPosition)
     {
-        ITerrainObjectManager.UpdateObjectsFunc(visibleGrassSet,invisibleGrassSet,playerPosition,maxViewDistance,maxExistDistance);
+        ITerrainObjectManager.UpdateObjectsFunc(visibleGrassSet,playerPosition,maxViewDistance);
         lastPlayerPos = playerPosition;
         
         if (isGrassEnabled)
         {
-            GrassRenderer.Instance.DrawGrass(visibleGrassSet.ToArray());
+            grassRenderer.DrawGrass(visibleGrassSet.ToArray(),playerPosition);
         } 
     }
     
-
-    // private void OnDrawGizmos()
-    // {
-    //     foreach (var grass in visibleGrassSet)
-    //     {
-    //         Gizmos.DrawCube(grass,5 * Vector3.one);
-    //     }
-    // }
 }

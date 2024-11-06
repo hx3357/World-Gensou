@@ -2,8 +2,8 @@
 
 public static class GrassMeshData
 {
-    readonly static float halfWidth = 1;
-    readonly static float rowHeight = 3;
+    readonly static float halfWidth = 0.5f;
+    readonly static float rowHeight = 1;
 
     readonly static Vector3[] vertices =
     {
@@ -47,6 +47,7 @@ public static class GrassMeshData
     };
 
     readonly public static Mesh GrassMesh;
+    readonly public static Vector3 GrassMeshSize = new Vector3(halfWidth * 2, rowHeight * 4, 0);
 
     static GrassMeshData()
     {

@@ -15,19 +15,28 @@ struct GrassOutput
     float height;
     float width;
     float darkness;
-    float angle_dir;
+    float angle_xz;
     float bend;
+    float3 euler_rotation;
 };
 
 int grass_count;
-// float time;
-// float wind_direction_angle;
-// float wind_strength;
-// float swing_speed;
-// float swing_strength;
+float time;
+float3 wind_direction;
+float wind_strength;
+float windless_bend;
+float windless_swing_strength;
 
 StructuredBuffer<GrassInput> input_grass_buffer;
 RWStructuredBuffer<GrassOutput> output_grass_buffer;
+
+float3 rotate(float3 pos, float xz_angle, float y_angle)
+{
+    float3 result = pos;
+    result.xz = float2(cos(xz_angle) * pos.x - sin(xz_angle) * pos.z, sin(xz_angle) * pos.x + cos(xz_angle) * pos.z);
+    result.yz = float2(cos(y_angle) * pos.y - sin(y_angle) * pos.z, sin(y_angle) * pos.y + cos(y_angle) * pos.z);
+    return result;
+}
 
 [numthreads(64,1,1)]
 void CSMain(uint3 id : SV_DispatchThreadID)
@@ -39,22 +48,34 @@ void CSMain(uint3 id : SV_DispatchThreadID)
 
     const float3 position = input_grass_buffer[id.x].position;
 
-    // // Random swing
-    // const float3 swing = swing_strength * float3(
-    //     0.5 * (f_snoise(swing_speed * (position * 0.1 + time)) - 0.5),
-    //     0.5 * (f_snoise(swing_speed * (position * 0.1 + time + 100)) - 0.5),
-    //     0.5 * (f_snoise(swing_speed * (position * 0.1 + time + 200)) - 0.5)
-    // );
-    //
-    //
-    // const float3 wind_direction = float3(cos(wind_direction_angle), 0, sin(wind_direction_angle));
-    // const float3 wind = wind_direction * wind_strength;
+    // Windless
+    const float xz_angle = f_snoise(position *10) * 3.14;
+    const float y_angle = 3.14/2 - windless_bend + windless_swing_strength * f_snoise(
+        (-position * 0.1+ time) * windless_swing_strength);
+    const float4 xz_rotate_quaternion = quaternion_map_vec(float3(1, 0, 0), float3(cos(xz_angle), 0, sin(xz_angle)));
+    const float4 y_rotate_quaternion = quaternion_map_vec(float3(0, 1, 0), float3(0, cos(y_angle), sin(y_angle)));
+    const float4 windless_quaternion = xz_rotate_quaternion;
+
+    // Wind
+    float3 lerped_wind_dir = lerp(float3(0, 1, 0), normalize(wind_direction), wind_strength);
+    lerped_wind_dir += f_snoise(position + 0.1 * wind_strength * time) * wind_strength;
+    const float4 wind_quaternion = quaternion_map_vec(float3(0, 1, 0), lerped_wind_dir);
+
+    //const float4 final_quaternion = lerp(windless_quaternion, wind_quaternion, wind_strength);
+    const float4 final_quaternion = windless_quaternion;
+    
+    const float3 final_dir_y = rotate_vector(float3(0,1,0), final_quaternion);
+    const float3 final_dir_xz = rotate_vector(float3(1,0,0), final_quaternion);
+    const float fin_angle_y = atan2(final_dir_y.y, final_dir_y.z);
+    const float fin_angle_xz = atan2(final_dir_xz.z, final_dir_xz.x);
+    
+
     GrassOutput output;
     output.position = position;
     output.height = 1.0;
     output.width = 1;
     output.darkness = 0.5;
-    output.angle_dir = 0;
+    output.angle_xz = fin_angle_xz;
     output.bend = 0;
     output_grass_buffer[id.x] = output;
 }
