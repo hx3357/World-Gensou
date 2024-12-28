@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Assertions;
+using Object = UnityEngine.Object;
 
 public class ObjectPlacer : MonoSingleton<ObjectPlacer>
 {
@@ -10,32 +11,22 @@ public class ObjectPlacer : MonoSingleton<ObjectPlacer>
     
     public Transform player;
 
-    // Key: objectName, Value: inactive objects
-    private Dictionary<string, Queue<PlaceableObject>> objectPool;
-  
-    private List<PlaceableObject> currentObjects = new();
+    private PlaceableObjectPool placeableObjectPool;
+    
     private GameObject parentObj;
     
-    private class PlaceableObject
+    public class PlaceableObject
     {
         public readonly string objectName;
-        private GameObject[] runtimeGameObjectLOD;
-        private float[] viewDistance;
+        public float maxViewDistance;
         private bool isActive;
-        private int currentLOD;
 
-        private GameObject currentGameObject => runtimeGameObjectLOD[currentLOD];
+        private GameObject currentGameObject;
         
-        public PlaceableObject(string objectName,GameObject[] gameObjectLOD, float[] viewDistance,Transform parent,Vector3 playerPosition)
+        public PlaceableObject(string objectName,GameObject gameObjectPrefab, float maxViewDistance,Transform parent)
         {
-            runtimeGameObjectLOD = new GameObject[gameObjectLOD.Length];
-            
-            for(int i = 0;i<gameObjectLOD.Length;i++)
-            {
-                runtimeGameObjectLOD[i] = Instantiate(gameObjectLOD[i]);
-                runtimeGameObjectLOD[i].transform.parent = parent;
-            }
-            this.viewDistance = viewDistance;
+            currentGameObject = Instantiate(gameObjectPrefab, parent, true);
+            this.maxViewDistance = maxViewDistance;
             this.objectName = objectName;
             SetActive(true);
         }
@@ -43,62 +34,33 @@ public class ObjectPlacer : MonoSingleton<ObjectPlacer>
         public void SetActive(bool active)
         {
             isActive = active;
-            for(int i = 0; i < runtimeGameObjectLOD.Length; i++)
-            {
-                runtimeGameObjectLOD[i].SetActive(i == currentLOD && active);
-            }
-        }
-        
-        private void SetLOD(int lod)
-        {
-            currentLOD = lod;
-            for(int i = 0; i < runtimeGameObjectLOD.Length; i++)
-            {
-                runtimeGameObjectLOD[i].SetActive(i == currentLOD && isActive);
-            }
-        }
-        
-        public bool SetLOD(Vector3 playerPosition)
-        {
-            for(int i = 0; i < viewDistance.Length; i++)
-            {
-                if(Vector3.Distance(currentGameObject.transform.position, playerPosition) < viewDistance[i] * Chunk.GetWorldSize()[0])
-                {
-                    SetLOD(i);
-                    return true;
-                }
-            }
-
-            return false;
+            currentGameObject.SetActive(active);
         }
         
         public void SetTransform(Vector3 position, Vector3 scale, Vector3 rotation)
         {
-            foreach (var gObj in runtimeGameObjectLOD)
-            {
-                gObj.transform.position = position;
-                gObj.transform.localScale = scale;
-                gObj.transform.rotation = Quaternion.Euler(rotation);
-            }
+            currentGameObject.transform.position = position;
+            currentGameObject.transform.localScale = scale;
+            currentGameObject.transform.eulerAngles = rotation;
         }
         
         public float GetDistance(Vector3 playerPosition)
         {
             return Vector3.Distance(currentGameObject.transform.position, playerPosition);
         }
-    }
+
+        public void Destory()
+        {
+            Object.Destroy(currentGameObject);
+        }
+    } 
 
     protected override void Awake()
     {
         base.Awake();
         
-        objectPool = new();
-        foreach (var placeableObject in objectTable.placeableObjects)
-        {
-            objectPool.Add(placeableObject.objectName, new ());
-        }
-        
         parentObj = new GameObject("PlaceableObjects");
+        placeableObjectPool = new PlaceableObjectPool(objectTable, parentObj.transform);
     }
 
     public void Start()
@@ -109,84 +71,49 @@ public class ObjectPlacer : MonoSingleton<ObjectPlacer>
         };
     }
 
-    PlaceableObject GetPlaceableObject(string objectName)
-    {
-        Assert.IsTrue(objectPool.ContainsKey(objectName),
-            "Placeable objects does not contain objectName: " + objectName);
-        
-        if(objectPool[objectName].Count > 0)
-        {
-            PlaceableObject obj = objectPool[objectName].Dequeue();
-            obj.SetActive(true);
-            return obj;
-        }
-
-        // If there is no available object in the pool, instantiate a new one
-        PlaceableObject newObject = null;
-        foreach (var placeableObject in objectTable.placeableObjects)
-        {
-            if (placeableObject.objectName == objectName)
-            {
-                newObject = new PlaceableObject(objectName, placeableObject.gameObjectLOD, placeableObject.viewDistance,
-                    parentObj.transform,player.position);
-                break;
-            }
-        }
-        
-        return newObject;
-    }
-
-    void DisableObject(PlaceableObject obj)
-    {
-        obj.SetActive(false);
-        objectPool[obj.objectName].Enqueue(obj);
-    }
-
-
     public void PlaceObject(Vector3 worldPosition, Vector3 objectSize, Vector3 objectRotation, string objectName)
     {
+        // Terrain object case
         if(TerrainObjectManagersTable.TryGetValue(objectName, out var terrainObjectManager))
         {
             terrainObjectManager.PlaceObject(worldPosition, objectSize, objectRotation);
             return;
         }
         
-        foreach (var placeableObject in objectTable.placeableObjects)
-        {
-            if (placeableObject.objectName != objectName) continue;
-            if (Vector3.Distance(worldPosition, player.position) >
-                placeableObject.viewDistance[^1] * Chunk.GetWorldSize()[0])
-                return;
+        float objViewDistance = objectTable.FindPlaceableObjectDataByName(objectName).viewDistance;
+        if (Vector3.Distance(worldPosition, player.position) >
+            objViewDistance * Chunk.GetWorldSize()[0]){
+            return;
         }
-
-        PlaceableObject newPlaceableObject = GetPlaceableObject(objectName);
+        
+        PlaceableObject newPlaceableObject = placeableObjectPool.GetObject(objectName);
         newPlaceableObject.SetTransform(worldPosition, objectSize, objectRotation);
-        newPlaceableObject.SetLOD(player.position);
-        currentObjects.Add(newPlaceableObject);
     }
 
     public void UpdatePlacer()
     {
+        // Terrain object case
         foreach (var terrainObjectManager in TerrainObjectManagersTable)
         {
             terrainObjectManager.Value.UpdateObjects(player.position);
         }
         
+        // Normal object case
+        // Disable objects out of range
         List<PlaceableObject> objectsToDisable = new();
         
-        foreach (var obj in currentObjects)
+        foreach (var obj in placeableObjectPool.activeObjects)
         {
-            bool isStillThere = obj.SetLOD(player.position);
-            if (!isStillThere)
+            if (obj.GetDistance(player.position) > obj.maxViewDistance * Chunk.GetWorldSize()[0])
             {
-                DisableObject(obj);
                 objectsToDisable.Add(obj);
             }
         }
         
         foreach (var obj in objectsToDisable)
         {
-            currentObjects.Remove(obj);
+            placeableObjectPool.DisableObject(obj);
         }
+        Debug.Log(placeableObjectPool.GetObjCount("Lake"));
     }
 }

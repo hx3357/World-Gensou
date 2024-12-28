@@ -6,8 +6,7 @@ using UnityEngine.Serialization;
 
 public class Chunk : MonoBehaviour
 {
-    public readonly static float ChunkDestroyTime = 5;
-    public static Dictionary<Vector3,Chunk> zombieChunkDict = new Dictionary<Vector3, Chunk>();
+    public static readonly Dictionary<Vector3,Chunk> zombieChunkDict = new Dictionary<Vector3, Chunk>();
     
     private bool isZombie = false;
     private float zombieTimer = 0;
@@ -19,15 +18,7 @@ public class Chunk : MonoBehaviour
     public Vector3Int chunkCoord;
     public Vector4[] dotField;
     public Vector3Int dotFieldSize;
-
-    public static float universalChunkSize;
-    
     public int chunkResolution;
-    
-    /// <summary>
-    /// If a chunk is static, chunk exclusive computation will be executed constantly
-    /// </summary>
-    public bool isStatic = false;
     
     public bool isShowVolumeGizmo ;
     public bool isShowDotFieldGizmo = false;
@@ -41,6 +32,9 @@ public class Chunk : MonoBehaviour
     private MeshFilter meshFilter;
     private MeshRenderer meshRenderer;
     private Vector3 volumeSize;
+    private static float universalChunkSize;
+    
+    private readonly static float ZOMBIE_CHUNK_TIME = 15;
     
     #region Static Field
     public static void SetUniversalChunkSize(float cellsize)
@@ -122,13 +116,13 @@ public class Chunk : MonoBehaviour
         ProcedualGeneratorUtility.ShowDotFieldGizmo(transform.position, dotFieldSize, dotField);
     }
     
-    public void HideMesh()
+    void HideMesh()
     {
         if(meshFilter!=null)
             meshRenderer.enabled = false;
     }
     
-    public void ShowMesh()
+    void ShowMesh()
     {
         if(meshFilter!=null)
             meshRenderer.enabled = true;
@@ -203,7 +197,7 @@ public class Chunk : MonoBehaviour
         if (isZombie)
         {
             zombieTimer += Time.deltaTime;
-            if (zombieTimer >= ChunkDestroyTime)
+            if (zombieTimer >= ZOMBIE_CHUNK_TIME)
             {
                 DestoryChunk();
             }
