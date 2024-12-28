@@ -1,10 +1,8 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.Assertions;
-using Random = UnityEngine.Random;
 
 public class ChunkGroup : MonoBehaviour
 {
@@ -18,7 +16,7 @@ public class ChunkGroup : MonoBehaviour
    private IScalerFieldGenerator scalerFieldGenerator;
    protected object[] scalerFieldParameters;
    
-   protected IChunkGenerator ChunkGenerator;
+   protected IChunkGenerator chunkGenerator;
    
    // Chunk coord -> resolution
    protected Dictionary<Vector3Int,int> activeChunks {get; private set;} = new ();
@@ -49,9 +47,7 @@ public class ChunkGroup : MonoBehaviour
    /// <param name="m_chunkMaterial"></param>
    /// <param name="m_surroundBox"></param>
    /// <param name="m_seed"></param>
-   /// <param name="m_garbageCollectionInterval">Interval for distroying the garbage chunks in the scene</param>
    /// <param name="parameters">Parameters for scalar field generator</param>
-   /// <param name="chunkDispatcher"></param>
    public virtual void Initialize(IChunkGenerator mChunkGenerator,
       IChunkDispatcher m_chunkDispatcher,
       int m_maxViewDistance, Material m_chunkMaterial, SurroundBox m_surroundBox, int m_seed,
@@ -59,7 +55,7 @@ public class ChunkGroup : MonoBehaviour
    {
       chunkDispatcher = m_chunkDispatcher;
       scalerFieldGenerator = mChunkGenerator.GetScalerFieldGenerator();
-      ChunkGenerator = mChunkGenerator;
+      chunkGenerator = mChunkGenerator;
       surroundBox = m_surroundBox ?? SurroundBox.InfiniteSurroundBox;
       maxViewDistance = m_maxViewDistance;
       chunkMaterial = m_chunkMaterial;
@@ -91,7 +87,7 @@ public class ChunkGroup : MonoBehaviour
          foreach (var chunk in chunksToDestroy)
          {
             activeChunks.Remove(chunk);
-            ChunkGenerator.DeleteChunk(chunk);
+            chunkGenerator.DeleteChunk(chunk);
          }
       
       StartCoroutine(AsyncLoadChunksCoroutine(chunksToGenerate,chunkParameters));
@@ -117,7 +113,7 @@ public class ChunkGroup : MonoBehaviour
          for(int j=0;j<chunksNumPerGenerate&&i<chunksToBeProduced.Count;j++)
          {
             activeChunks.TryAdd(chunksToBeProduced[i].Item1,chunksToBeProduced[i].Item2);
-            ChunkGenerator.ProduceChunk(chunksToBeProduced[i].Item1,chunksToBeProduced[i].Item2 ,m_chunkMaterial: chunkMaterial,
+            chunkGenerator.ProduceChunk(chunksToBeProduced[i].Item1,chunksToBeProduced[i].Item2 ,m_chunkMaterial: chunkMaterial,
                SFGParameters: m_parameters == null ? scalerFieldParameters :new []{ m_parameters[i]},m_isForceUpdate:false);
             i++;
          }

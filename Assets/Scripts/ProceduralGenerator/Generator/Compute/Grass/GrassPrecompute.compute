@@ -77,5 +77,6 @@ void CSMain(uint3 id : SV_DispatchThreadID)
     output.darkness = 0.5;
     output.angle_xz = fin_angle_xz;
     output.bend = 0;
+    output.euler_rotation = 0;
     output_grass_buffer[id.x] = output;
 }

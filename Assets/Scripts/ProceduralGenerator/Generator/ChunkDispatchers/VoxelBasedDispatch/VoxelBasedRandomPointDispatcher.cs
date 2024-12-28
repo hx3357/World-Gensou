@@ -102,8 +102,8 @@ namespace ChunkDispatchers.VoxelBasedDispatch
                 lastPlayerVoxelCoord = _playerVoxelCoord;
             }
             
-            GenerateChunkData generateChunkData = new GenerateChunkData();
-            List<Vector3Int> _chunksToDestroy = new();
+            GenerateChunkData generateChunkData = new ();
+            List<Vector3Int> _chunksToDestroy = new ();
             
             
             Parallel.ForEach(chunkCoordMap.Keys, chunkCoord =>

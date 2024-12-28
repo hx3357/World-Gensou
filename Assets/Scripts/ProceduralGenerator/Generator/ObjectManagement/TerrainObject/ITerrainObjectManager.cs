@@ -13,15 +13,6 @@ public interface ITerrainObjectManager
         Vector3 playerPosition,float viewDistance)
     {
         List<Vector3> visibleSetRemoveList = new List<Vector3>();
-        
-        // foreach (var visiblePos in visibleSet)
-        // {
-        //     float distance = Vector3.Distance(visiblePos, playerPosition);
-        //     if (distance > viewDistance)
-        //     {
-        //         visibleSetRemoveList.Add(visiblePos);
-        //     }
-        // }
 
         Parallel.ForEach(visibleSet, visiblePos =>
         {
