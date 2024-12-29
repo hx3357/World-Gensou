@@ -2,5 +2,5 @@
 
 public interface IGrassRenderer
 {
-    public void DrawGrass(Vector3[] positions,Vector3 playerPosition);
+    public void DrawGrass(Vector3[] positions, Vector3 playerPosition);
 }

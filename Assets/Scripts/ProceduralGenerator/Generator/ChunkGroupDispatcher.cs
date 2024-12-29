@@ -4,12 +4,15 @@ using System.Collections.Generic;
 using ChunkDispatchers.VoxelBasedDispatch;
 using UnityEngine;
 
+/// <summary>
+/// This module defines the whole world by defining various chunk groups and everything else this world needs.
+/// </summary>
 public class ChunkGroupDispatcher : MonoBehaviour
 {
     public Transform playerTransform;
 
     public int maxViewDistance = 5;
-    public float chunkSize = 32*4;
+    public float chunkSize = 32 * 4;
     public float cellSize = 1;
     public Material chunkMaterial;
     public float downSampleRate = 1;
@@ -34,9 +37,9 @@ public class ChunkGroupDispatcher : MonoBehaviour
 
     private Vector3Int playerChunkCoord, lastPlayerChunkCoord;
 
-    private HashSet<Vector3Int> activeChunks = new HashSet<Vector3Int>();
+    private HashSet<Vector3Int> activeChunks = new();
 
-    private List<ChunkGroup> chunkGroups = new List<ChunkGroup>();
+    private List<ChunkGroup> chunkGroups = new();
 
     private void Awake()
     {
@@ -47,13 +50,13 @@ public class ChunkGroupDispatcher : MonoBehaviour
     {
         Initialize();
 
-        PerlinNoise3D perlinNoise3D = new PerlinNoise3D();
+        var perlinNoise3D = new PerlinNoise3D();
         perlinNoise3D.SetRandomSeed(seed);
     }
 
     private void Update()
     {
-        Vector3 playerPosition = playerTransform.position;
+        var playerPosition = playerTransform.position;
         playerChunkCoord = Chunk.GetChunkCoordByPosition(playerPosition);
         if (playerChunkCoord != lastPlayerChunkCoord)
         {
@@ -62,15 +65,12 @@ public class ChunkGroupDispatcher : MonoBehaviour
         }
     }
 
-    void UpdateAllChunkGroups(Vector3 playerPosition)
+    private void UpdateAllChunkGroups(Vector3 playerPosition)
     {
-        foreach (var chunkGroup in chunkGroups)
-        {
-            chunkGroup.UpdateChunkGroup(playerPosition);
-        }
+        foreach (var chunkGroup in chunkGroups) chunkGroup.UpdateChunkGroup(playerPosition);
     }
 
-    void Initialize()
+    private void Initialize()
     {
         //Set up the down sampler
         IScalerFieldDownSampler downSampler = new GPUTrilinearScalerFieldDownSampler(downSampleCS);
@@ -103,19 +103,20 @@ public class ChunkGroupDispatcher : MonoBehaviour
         chunkGroup0 = gameObject.AddComponent<ChunkGroup>();
         chunkGroup0.Initialize(chunkFactory0,
             new SphericalDispatcher(31), maxViewDistance, chunkMaterial,
-            SurroundBox.InfiniteSurroundBox, seed,10 ,new SDFIslandSFGParameter(
+            SurroundBox.InfiniteSurroundBox, seed, 10, new SDFIslandSFGParameter(
                 new[] { new Vector4(300, 200, 100, 0), new Vector4(-100, 100, 100, 0) },
                 new[] { new Vector4(100, 500, 100, 0), new Vector4(100, 500, 100, 0) }
             ));
-        
-        
+
 
         chunkGroup1 = gameObject.AddComponent<ChunkGroup>();
-        chunkGroup1.Initialize(chunkFactory0,new VoxelBasedRandomPointDispatcher(m_onVoxelGenerated: currentVoxel =>
+        chunkGroup1.Initialize(chunkFactory0, new VoxelBasedRandomPointDispatcher(m_onVoxelGenerated: currentVoxel =>
             {
-                int islandType = 0;
-                float lakePossibility = 1f;
-        
+                // TODO: Design specific module to encapsulate this callback logic
+
+                var islandType = 0;
+                var lakePossibility = 0.6f;
+
                 if (currentVoxel.isRoot)
                 {
                     if (Mathf.Abs(currentVoxel.center.GetHashCode() % 10000 / 10000f) < lakePossibility)
@@ -128,19 +129,20 @@ public class ChunkGroupDispatcher : MonoBehaviour
                                 currentVoxel.worldSize * 0.7f),
                             Vector3.zero, "Lake");
                     }
-                }else if (currentVoxel.depth >= 2)
+                }
+                else if (currentVoxel.depth >= 2)
                 {
-                    if(currentVoxel.center.GetHashCode()%10000/10000f < 0.01f)
+                    if (currentVoxel.center.GetHashCode() % 10000 / 10000f < 0.01f)
                         islandType = 3;
                     else
-                    // Generate Upper Island
-                    islandType = ((currentVoxel.voxelIndice & 4) >> 2) == 1 ? 1 : islandType;
+                        // Generate Upper Island
+                        islandType = (currentVoxel.voxelIndice & 4) >> 2 == 1 ? 1 : islandType;
                 }
-        
+
                 currentVoxel.voxelType = islandType;
             })
-           ,
-            maxViewDistance, chunkMaterial, null, seed, 10,new SDFIslandSFGParameter(
+            ,
+            maxViewDistance, chunkMaterial, null, seed, 10, new SDFIslandSFGParameter(
                 new[] { new Vector4(300, 100, 100, 0), new Vector4(-300, 100, 100, 0) },
                 new[] { new Vector4(100, 100, 100, 0), new Vector4(100, 100, 100, 0) }
             ));

@@ -5,19 +5,18 @@ using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.Rendering;
 
-public class GrassRenderer: MonoSingleton<GrassRenderer>,IGrassRenderer
+public class GrassRenderer : MonoSingleton<GrassRenderer>, IGrassRenderer
 {
-    public float boundSize = Int32.MaxValue;
+    public float boundSize = int.MaxValue;
     public Material grassMaterial;
     public uint maxInstanceCount = 10000;
     public ComputeShader grassComputeShader;
     public Camera mainCamera;
-    [InspectorLabel("Grass properties")]
-    public Vector3 windDir;
+    [InspectorLabel("Grass properties")] public Vector3 windDir;
     public float windStrength;
     public float windlessBend;
     public float windlessSwingStrength;
-    
+
     private RenderParams renderParams;
     private GraphicsBuffer commandBuffer;
     private GraphicsBuffer.IndirectDrawIndexedArgs[] commandData;
@@ -25,7 +24,7 @@ public class GrassRenderer: MonoSingleton<GrassRenderer>,IGrassRenderer
     private ComputeBuffer argsBuffer;
     private ComputeBuffer outputGrassBuffer;
     private ComputeBuffer inputGrassBuffer;
-    
+
     private uint threadGroupSizeX;
     private static readonly int InstanceBuffer = Shader.PropertyToID("instance_buffer");
     private static readonly int GrassCount = Shader.PropertyToID("grass_count");
@@ -33,29 +32,27 @@ public class GrassRenderer: MonoSingleton<GrassRenderer>,IGrassRenderer
     private static readonly int OutputGrassBuffer = Shader.PropertyToID("output_grass_buffer");
     private static readonly int GrassMeshSize = Shader.PropertyToID("grass_mesh_size");
 
-    struct GrassPrecomputeData
+    private struct GrassPrecomputeData
     {
-        Vector3 position;
-        
-        public static int SizeOf => sizeof(float) * 3;
+        private Vector3 position;
     }
 
-    struct GrassInstanceData
+    private struct GrassInstanceData
     {
-        Vector3 position;
-        float height;
-        float width;
-        float darkness;
-        float angle_dir;
-        float bend;
-        Vector3 euler_rotation;
+        private Vector3 position;
+        private float height;
+        private float width;
+        private float darkness;
+        private float angle_dir;
+        private float bend;
+        private Vector3 euler_rotation;
     }
 
     private void Start()
     {
         InitBuffer();
     }
-    
+
     private void OnDestroy()
     {
         DisposeBuffer();
@@ -64,34 +61,37 @@ public class GrassRenderer: MonoSingleton<GrassRenderer>,IGrassRenderer
     private void InitBuffer()
     {
         grassMesh = GrassMeshData.GrassMesh;
-        commandBuffer = new GraphicsBuffer(GraphicsBuffer.Target.IndirectArguments, 1, GraphicsBuffer.IndirectDrawIndexedArgs.size);
+        commandBuffer = new GraphicsBuffer(GraphicsBuffer.Target.IndirectArguments, 1,
+            GraphicsBuffer.IndirectDrawIndexedArgs.size);
         commandData = new GraphicsBuffer.IndirectDrawIndexedArgs[1];
         commandData[0].indexCountPerInstance = grassMesh.GetIndexCount(0);
         renderParams = new RenderParams(grassMaterial)
         {
             camera = mainCamera
         };
-        
-        inputGrassBuffer = new ComputeBuffer((int)maxInstanceCount, GrassPrecomputeData.SizeOf,ComputeBufferType.Structured);
-        outputGrassBuffer = new ComputeBuffer((int)maxInstanceCount, Marshal.SizeOf(typeof(GrassInstanceData)),ComputeBufferType.Structured);
+
+        inputGrassBuffer =
+            new ComputeBuffer((int)maxInstanceCount, Marshal.SizeOf(typeof(GrassPrecomputeData)), ComputeBufferType.Structured);
+        outputGrassBuffer = new ComputeBuffer((int)maxInstanceCount, Marshal.SizeOf(typeof(GrassInstanceData)),
+            ComputeBufferType.Structured);
         grassComputeShader.SetBuffer(0, InputGrassBuffer, inputGrassBuffer);
         grassComputeShader.SetBuffer(0, OutputGrassBuffer, outputGrassBuffer);
-        grassComputeShader.GetKernelThreadGroupSizes(0, out uint x, out _, out _);
+        grassComputeShader.GetKernelThreadGroupSizes(0, out var x, out _, out _);
         threadGroupSizeX = x;
-        
+
         grassMaterial.SetBuffer(InstanceBuffer, outputGrassBuffer);
         grassMaterial.SetVector(GrassMeshSize, GrassMeshData.GrassMeshSize);
     }
-    
-    void DisposeBuffer()
+
+    private void DisposeBuffer()
     {
         argsBuffer?.Dispose();
         outputGrassBuffer?.Dispose();
         inputGrassBuffer?.Dispose();
         commandBuffer?.Dispose();
     }
-    
-    public void DrawGrass(Vector3[] positions,Vector3 playerPos)
+
+    public void DrawGrass(Vector3[] positions, Vector3 playerPos)
     {
         uint currentInstanceCount;
         if (positions.Length > maxInstanceCount)
@@ -103,23 +103,28 @@ public class GrassRenderer: MonoSingleton<GrassRenderer>,IGrassRenderer
         {
             currentInstanceCount = (uint)positions.Length;
         }
-        
-        if(currentInstanceCount<=0)
+
+        if (currentInstanceCount <= 0)
             return;
-        
+       
         inputGrassBuffer.SetData(positions);
+        grassComputeShader.SetBuffer(0, InputGrassBuffer, inputGrassBuffer);
+        grassComputeShader.SetBuffer(0, OutputGrassBuffer, outputGrassBuffer);
         grassComputeShader.SetFloat("time", Time.unscaledTime);
         grassComputeShader.SetVector("wind_direction", windDir);
         grassComputeShader.SetFloat("wind_strength", windStrength);
         grassComputeShader.SetFloat("windless_bend", windlessBend);
         grassComputeShader.SetFloat("windless_swing_strength", windlessSwingStrength);
         grassComputeShader.SetInt(GrassCount, (int)currentInstanceCount);
-        grassComputeShader.Dispatch(0, Mathf.CeilToInt(currentInstanceCount / (float)threadGroupSizeX), 1, 1);
+        grassComputeShader.Dispatch(0, 
+            Mathf.CeilToInt(currentInstanceCount / (float)threadGroupSizeX), 1, 1);
         
+        grassMaterial.SetBuffer(InstanceBuffer, outputGrassBuffer);
+
         renderParams.worldBounds = new Bounds(Vector3.zero, Vector3.one * boundSize);
         commandData[0].instanceCount = currentInstanceCount;
         commandBuffer.SetData(commandData);
-        
-        Graphics.RenderMeshIndirect(renderParams,grassMesh,commandBuffer);
+
+        Graphics.RenderMeshIndirect(renderParams, grassMesh, commandBuffer);
     }
 }

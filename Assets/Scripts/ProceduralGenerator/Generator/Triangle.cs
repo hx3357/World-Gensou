@@ -11,6 +11,5 @@ public struct Triangle
     public int implColor1;
     public int implColor2;
     public int implColor3;
-    public static int SizeOf => sizeof(float)*(3*3+3);
+    public static int SizeOf => sizeof(float) * (3 * 3 + 3);
 }
-

@@ -17,21 +17,21 @@ RWStructuredBuffer<int> isConcreteFlagBuffer;
 RWStructuredBuffer<int> isAirFlagBuffer;
 
 [numthreads(8,8,8)]
-void CSMain (uint3 id : SV_DispatchThreadID)
+void CSMain(uint3 id : SV_DispatchThreadID)
 {
-    if(id.x >= dotFieldSize.x || id.y >= dotFieldSize.y || id.z >= dotFieldSize.z)
+    if (id.x >= dotFieldSize.x || id.y >= dotFieldSize.y || id.z >= dotFieldSize.z)
     {
         return;
     }
     float3 localPos = float3(id) * cellSize;
-    float value = 1- ClassicNoise((origin+ localPos) / scale + randomOffset);
+    float value = 1 - ClassicNoise((origin + localPos) / scale + randomOffset);
     outputPoints[get_point_index(id, dotFieldSize)] = float4(localPos, value);
-    if(value> isoLevel)
+    if (value > isoLevel)
     {
-        InterlockedAdd(isConcreteFlagBuffer[0],-1);
+        InterlockedAdd(isConcreteFlagBuffer[0], -1);
     }
     else
     {
-        InterlockedAdd(isAirFlagBuffer[0],-1);
+        InterlockedAdd(isAirFlagBuffer[0], -1);
     }
 }

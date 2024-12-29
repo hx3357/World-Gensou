@@ -17,36 +17,32 @@ public class PlaceableObjectPool
         _placeableObjectTable = placeableObjectTable;
         _parentTransform = parentTransform;
         foreach (var placeableObject in placeableObjectTable.placeableObjects)
-        {
-            inactiveObjectMap.Add(placeableObject.objectName, new ());
-        }
+            inactiveObjectMap.Add(placeableObject.objectName, new Queue<ObjectPlacer.PlaceableObject>());
     }
-    
+
     public ObjectPlacer.PlaceableObject GetObject(string objectName)
     {
         Assert.IsTrue(inactiveObjectMap.ContainsKey(objectName),
             "Placeable objects does not contain objectName: " + objectName);
-        
+
         // Use the object in the pool
         if (GetObjCount(objectName) > 0)
         {
-            ObjectPlacer.PlaceableObject obj = inactiveObjectMap[objectName].Dequeue();
+            var obj = inactiveObjectMap[objectName].Dequeue();
             obj.SetActive(true);
             return obj;
         }
-        
+
         // If there is no available object in the pool, instantiate a new one
         ObjectPlacer.PlaceableObject newObj = null;
         foreach (var obj in _placeableObjectTable.placeableObjects)
-        {
             if (obj.objectName == objectName)
             {
                 newObj = new ObjectPlacer.PlaceableObject(objectName, obj.gameObjectPrefab,
                     obj.viewDistance, _parentTransform);
                 break;
             }
-        }
-        
+
         Assert.IsNotNull(newObj,
             "Placeable object table does not contain objectName: " + objectName);
         activeObjects.Add(newObj);
@@ -56,14 +52,14 @@ public class PlaceableObjectPool
     public void DisableObject(ObjectPlacer.PlaceableObject obj)
     {
         activeObjects.Remove(obj);
-        
+
         if (GetObjCount(obj.objectName) >=
             _placeableObjectTable.FindPlaceableObjectDataByInstance(obj).maxCount)
         {
             obj.Destory();
             return;
         }
-        
+
         obj.SetActive(false);
         inactiveObjectMap[obj.objectName].Enqueue(obj);
     }

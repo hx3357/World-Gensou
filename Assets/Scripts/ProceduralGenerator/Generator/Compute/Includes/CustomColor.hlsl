@@ -17,17 +17,17 @@
 #define ROCK float3(0.5,0.5,0.5)
 #define SNOW float3(1,1,1)
 
-int get_impl_color(float3 color,int dot_type)
+int get_impl_color(float3 color, int dot_type)
 {
-    return int(clamp(color.x*255,0,255))& 0xFF |
-        (int(clamp(color.y*255,0,255))& 0xFF) << 8 |
-            (int(clamp(color.z*255,0,255))& 0xFF) << 16|
-                (dot_type & 0xFF) << 24;
+    return int(clamp(color.x * 255, 0, 255)) & 0xFF |
+        (int(clamp(color.y * 255, 0, 255)) & 0xFF) << 8 |
+        (int(clamp(color.z * 255, 0, 255)) & 0xFF) << 16 |
+        (dot_type & 0xFF) << 24;
 }
 
 float3 get_expl_color(int color)
 {
-    return float3(color & 0xFF,color >> 8 & 0xFF, color >> 16 & 0xFF)/255;
+    return float3(color & 0xFF, color >> 8 & 0xFF, color >> 16 & 0xFF) / 255;
 }
 
 int get_dot_type(int color)
@@ -35,7 +35,7 @@ int get_dot_type(int color)
     return color >> 24 & 0xFF;
 }
 
-int lerp_impl_color(const int a,const int b,const float t)
+int lerp_impl_color(const int a, const int b, const float t)
 {
     const float3 colorA = get_expl_color(a);
     const float3 colorB = get_expl_color(b);

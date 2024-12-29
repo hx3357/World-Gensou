@@ -8,12 +8,12 @@ namespace ChunkDispatchers.VoxelBasedDispatch
     {
         public List<Voxel> voxels = new();
         private HashSet<Vector3> voxelPositions = new();
-        
+
         public Voxel rootVoxel;
 
         public void Add(Voxel voxel)
         {
-            if(voxelPositions.Contains(voxel.center))
+            if (voxelPositions.Contains(voxel.center))
                 return;
             voxels.Add(voxel);
             voxelPositions.Add(voxel.center);

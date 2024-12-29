@@ -5,10 +5,10 @@ using Unity.Burst;
 using Unity.Mathematics;
 
 /// <summary>
-/// Used to generate mesh from triangles and gather position of the placeable objects 
+/// Used to generate mesh from triangles and gather position data of the placeable objects 
 /// </summary>
 [BurstCompile]
-struct GenerateTerrainJob : IJob
+internal struct GenerateTerrainJob : IJob
 {
     [ReadOnly] public NativeArray<Triangle> triangles;
     [ReadOnly] public float3 chunkWorldPosition;
@@ -16,7 +16,7 @@ struct GenerateTerrainJob : IJob
     public NativeList<Color32> vertColors;
     public NativeList<int> indices;
     public NativeHashMap<float3, int> vertexIndexMap;
-    
+
     [ReadOnly] public TerrainPlaceableObjectParameter TerrainPlaceableObjectParameter;
     public TerrainPlaceableObjectDataBiltable TerrainPlaceableObjectDataBiltable;
 
@@ -31,43 +31,45 @@ struct GenerateTerrainJob : IJob
         return new Color32((byte)(implColor & 0xFF), (byte)((implColor >> 8) & 0xFF),
             (byte)((implColor >> 16) & 0xFF), a);
     }
-    
-    private void PlaceObject(int3 dotTypes,float triangleArea,float3 p1,float3 p2,float3 p3)
+
+    private void PlaceObject(int3 dotTypes, float triangleArea, float3 p1, float3 p2, float3 p3)
     {
-        TerrainPlaceableObjectParameter.GetMaxDensityAndDotType(dotTypes, out int dotType, out var density);
+        TerrainPlaceableObjectParameter.GetMaxDensityAndDotType(dotTypes, out var dotType, out var density);
         double sampleCountExp = triangleArea * density;
-        Unity.Mathematics.Random random = new (math.hash(p1 + p2 + p3));
-        int sampleCount = GeneratePoisson(random, sampleCountExp);
-        for(int i = 0; i < sampleCount; i++)
+        Unity.Mathematics.Random random = new(math.hash(p1 + p2 + p3));
+        var sampleCount = GeneratePoisson(random, sampleCountExp);
+        for (var i = 0; i < sampleCount; i++)
         {
-            float u = random.NextFloat(1);
-            float v = random.NextFloat(1);
-            if(u+v > 1)
+            var u = random.NextFloat(1);
+            var v = random.NextFloat(1);
+            if (u + v > 1)
             {
                 u = 1 - u;
                 v = 1 - v;
             }
-            float3 position = p1 + u * (p2 - p1) + v * (p3 - p1) + chunkWorldPosition;
+
+            var position = p1 + u * (p2 - p1) + v * (p3 - p1) + chunkWorldPosition;
             TerrainPlaceableObjectDataBiltable.Add(dotType, position);
         }
     }
 
-    private int GeneratePoisson(Unity.Mathematics.Random random,double lamada)
+    private int GeneratePoisson(Unity.Mathematics.Random random, double lamada)
     {
-        double L = math.exp(-lamada);
+        var L = math.exp(-lamada);
         double product = 1;
-        int count = 0;
+        var count = 0;
         while (product > L)
         {
             product *= random.NextDouble();
             count++;
         }
+
         return count - 1;
     }
 
     public void Execute()
     {
-        int currentVertexIndex = 0;
+        var currentVertexIndex = 0;
         foreach (var triangle in triangles)
         {
             Color32 color;
@@ -111,7 +113,7 @@ struct GenerateTerrainJob : IJob
                 float triangleArea = math.length(math.cross(triangle.p2 - triangle.p1, triangle.p3 - triangle.p1)) / 2;
                 PlaceObject(dotTypes, triangleArea, triangle.p1, triangle.p2, triangle.p3);
             }
-            
+
             indices.Add(vertexIndexMap[triangle.p3]);
         }
     }

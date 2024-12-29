@@ -2,43 +2,43 @@
 
 public static class GrassMeshData
 {
-    readonly static float halfWidth = 0.5f;
-    readonly static float rowHeight = 1;
+    private static readonly float halfWidth = 0.5f;
+    private static readonly float rowHeight = 1;
 
-    readonly static Vector3[] vertices =
+    private static readonly Vector3[] vertices =
     {
-        new Vector3(-halfWidth, 0, 0),
-        new Vector3(halfWidth, 0, 0),
-        new Vector3(-halfWidth, rowHeight, 0),
-        new Vector3(halfWidth, rowHeight, 0),
-        new Vector3(-halfWidth * 0.9f, rowHeight * 2, 0),
-        new Vector3(halfWidth * 0.9f, rowHeight * 2, 0),
-        new Vector3(-halfWidth * 0.8f, rowHeight * 3, 0),
-        new Vector3(halfWidth * 0.8f, rowHeight * 3, 0),
-        new Vector3(0, rowHeight * 4, 0)
+        new(-halfWidth, 0, 0),
+        new(halfWidth, 0, 0),
+        new(-halfWidth, rowHeight, 0),
+        new(halfWidth, rowHeight, 0),
+        new(-halfWidth * 0.9f, rowHeight * 2, 0),
+        new(halfWidth * 0.9f, rowHeight * 2, 0),
+        new(-halfWidth * 0.8f, rowHeight * 3, 0),
+        new(halfWidth * 0.8f, rowHeight * 3, 0),
+        new(0, rowHeight * 4, 0)
     };
 
-    readonly static Vector3 normal = new Vector3(0, 0, -1);
+    private static readonly Vector3 normal = new(0, 0, -1);
 
-    readonly static Vector3[] normals =
+    private static readonly Vector3[] normals =
     {
         normal, normal, normal, normal, normal, normal, normal, normal, normal
     };
 
-    readonly static Vector2[] uvs =
+    private static readonly Vector2[] uvs =
     {
-        new Vector2(0, 0),
-        new Vector2(1, 0),
-        new Vector2(0, 0.25f),
-        new Vector2(1, 0.25f),
-        new Vector2(0, 0.5f),
-        new Vector2(1, 0.5f),
-        new Vector2(0, 0.75f),
-        new Vector2(1, 0.75f),
-        new Vector2(0.5f, 1)
+        new(0, 0),
+        new(1, 0),
+        new(0, 0.25f),
+        new(1, 0.25f),
+        new(0, 0.5f),
+        new(1, 0.5f),
+        new(0, 0.75f),
+        new(1, 0.75f),
+        new(0.5f, 1)
     };
 
-    readonly static int[] indices =
+    private static readonly int[] indices =
     {
         0, 1, 2, 1, 3, 2,
         2, 3, 4, 3, 5, 4,
@@ -46,8 +46,8 @@ public static class GrassMeshData
         6, 7, 8
     };
 
-    readonly public static Mesh GrassMesh;
-    readonly public static Vector3 GrassMeshSize = new Vector3(halfWidth * 2, rowHeight * 4, 0);
+    public static readonly Mesh GrassMesh;
+    public static readonly Vector3 GrassMeshSize = new(halfWidth * 2, rowHeight * 4, 0);
 
     static GrassMeshData()
     {

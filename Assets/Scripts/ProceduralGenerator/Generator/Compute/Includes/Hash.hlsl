@@ -1,32 +1,34 @@
 ﻿#ifndef HASH_HLSL
 #define HASH_HLSL
 
+#define USE_HR_HASH 1
+
 float3 lcg_prng(float3 vec)
 {
-    float3 result = (vec*1664525+1013904223)%4294967296./4294967296.;
+    float3 result = (vec * 1664525 + 1013904223) % 4294967296. / 4294967296.;
     return result;
 }
 
 uint3 pcg3d(uint3 v)
 {
-    v = v * 1664525u + 1013904223u;   
+    v = v * 1664525u + 1013904223u;
 
-    v.x += v.y*v.z;
-    v.y += v.z*v.x;
-    v.z += v.x*v.y;
+    v.x += v.y * v.z;
+    v.y += v.z * v.x;
+    v.z += v.x * v.y;
 
-    v ^= v>>16u;
+    v ^= v >> 16u;
 
-    v.x += v.y*v.z;
-    v.y += v.z*v.x;
-    v.z += v.x*v.y;
+    v.x += v.y * v.z;
+    v.y += v.z * v.x;
+    v.z += v.x * v.y;
 
     return v;
 }
 
 // Hash function from H. Schechter & R. Bridson, goo.gl/RXiKaH
 
-#define USE_HR_HASH 0
+
 
 uint HRHash(uint s)
 {
@@ -44,9 +46,9 @@ float HRHashf(uint s)
     return float(HRHash(s)) / 4294967296.0;
 }
 
-float simple_hash(float3 vec)
+float get_hash(float3 vec)
 {
-    #if USE_HR_HASH == 1
+    #if USE_HR_HASH
     return HRHashf(dot(asuint(vec), 2747636419u));
     #else
     float3 smallValue = sin(vec);

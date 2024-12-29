@@ -4,5 +4,6 @@ using UnityEngine;
 
 public class Grass : MonoBehaviour
 {
-   
+    public Vector3 position;
+    public bool isVisible;
 }

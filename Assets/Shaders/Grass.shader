@@ -2,7 +2,7 @@ Shader "Custom/Grass"
 {
     Properties
     {
-        _BaseColor ("Example Colour", Color) = (0, 0.66, 0.73, 1)
+        _BaseColor ("Base Colour", Color) = (0, 0.66, 0.73, 1)
     }
     SubShader
     {
@@ -30,8 +30,8 @@ Shader "Custom/Grass"
             float width;
             float darkness;
             float angle_xz;
-            float bend;
-            float3 euler_rotation;
+            float bend_xz;
+            float bend_y;
         };
 
 
@@ -86,9 +86,10 @@ Shader "Custom/Grass"
                 return float3(v.x, v.y * c - v.z * s, v.y * s + v.z * c);
             }
 
-            float3 GetBendedVertex(float3 vertex, float bend,float height)
+            float3 GetBendedVertex(float3 vertex, float bend,float angle_xz,float height)
             {
                 float3 bended_vertex = rotate_yz(vertex, lerp(0, bend, vertex.y / height));
+                bended_vertex = rotate_xz(bended_vertex,lerp(0, angle_xz, vertex.y / height));
                 return bended_vertex;
             }
 
@@ -99,8 +100,9 @@ Shader "Custom/Grass"
                 float3 obj_pos = IN.positionOS.xyz;
                 InstanceData instance = instance_buffer[id];
                 obj_pos *= float3(instance.width, instance.height, 1);
-                obj_pos = GetBendedVertex(obj_pos, instance.bend,grass_mesh_size.y * instance.height);
                 obj_pos = rotate_xz(obj_pos, instance.angle_xz);
+                obj_pos = GetBendedVertex(obj_pos, instance.bend_y,instance.bend_xz,
+                    grass_mesh_size.y * instance.height);
                 const VertexPositionInputs positionInputs = GetVertexPositionInputs(obj_pos);
                 const float3 position = instance.position + positionInputs.positionWS;
                 OUT.positionCS = TransformWorldToHClip(position);

@@ -13,7 +13,7 @@ public enum TerrainPlaceableObjectIndice
 
 // Send data to the job
 [BurstCompile]
-struct TerrainPlaceableObjectParameter
+internal struct TerrainPlaceableObjectParameter
 {
     public float grassDensity;
 
@@ -32,9 +32,9 @@ struct TerrainPlaceableObjectParameter
 
 // Fetch data from the job
 [BurstCompile]
-struct TerrainPlaceableObjectDataBiltable
+internal struct TerrainPlaceableObjectDataBiltable
 {
-    public NativeList<float3> grassPositions;
+    private NativeList<float3> grassPositions;
 
     public TerrainPlaceableObjectDataBiltable(int capacity)
     {
@@ -49,8 +49,8 @@ struct TerrainPlaceableObjectDataBiltable
 
     public TerrainPlaceableObjectData GetPlaceableObjectData()
     {
-        TerrainPlaceableObjectData terrainPlaceableObjectData = new TerrainPlaceableObjectData();
-        Vector3[] grassPositionList = new Vector3[grassPositions.Length];
+        var terrainPlaceableObjectData = new TerrainPlaceableObjectData();
+        var grassPositionList = new Vector3[grassPositions.Length];
         grassPositions.AsArray().Reinterpret<Vector3>().CopyTo(grassPositionList);
         terrainPlaceableObjectData.grassPositions = grassPositionList;
         return terrainPlaceableObjectData;
@@ -62,15 +62,13 @@ struct TerrainPlaceableObjectDataBiltable
     }
 }
 
-class TerrainPlaceableObjectData
+internal class TerrainPlaceableObjectData
 {
     public Vector3[] grassPositions;
-    
+
     public void SubmitPlaceableObjectData()
     {
         foreach (var grassPosition in grassPositions)
-        {
-            ObjectPlacer.Instance.PlaceObject(grassPosition, Vector3.one, Vector3.zero,"Grass");
-        }
+            ObjectPlacer.Instance.PlaceObject(grassPosition, Vector3.one, Vector3.zero, "Grass");
     }
 }

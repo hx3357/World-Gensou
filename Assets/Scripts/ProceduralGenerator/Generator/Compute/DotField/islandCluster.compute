@@ -25,31 +25,32 @@ RWStructuredBuffer<int> isConcreteFlagBuffer;
 RWStructuredBuffer<int> isAirFlagBuffer;
 
 [numthreads(8,8,4)]
-void CSMain (uint3 id : SV_DispatchThreadID)
+void CSMain(uint3 id : SV_DispatchThreadID)
 {
-    if(id.x >= dotFieldSize.x || id.y >= dotFieldSize.y || id.z >= dotFieldSize.z)
+    if (id.x >= dotFieldSize.x || id.y >= dotFieldSize.y || id.z >= dotFieldSize.z)
         return;
-    
-    const float3 pos = id * cellSize+origin;
+
+    const float3 pos = id * cellSize + origin;
     DotExpl dot = INIT_DOT_EXPL;
-    
+
     const float baseRadius = 100;
     const float height = 100;
     float sum = SDF_MAX;
-    const float3 basicFbmShapePos = sdf_pos_islandlize(pos,avgOrigins[0],0);
-    for(int i=0;i<islandCount;i++)
+    const float3 basicFbmShapePos = sdf_pos_islandlize(pos, avgOrigins[0], 0);
+    for (int i = 0; i < islandCount; i++)
     {
         sum = smooth_union(sum,
-            neo_fbm_shape_sdf(basicFbmShapePos - islandPositions[i],islandPositions[i], baseRadius, height, 5,1.2,0.9),
-            1);
+                           neo_fbm_shape_sdf(basicFbmShapePos - islandPositions[i], islandPositions[i], baseRadius,
+                                             height, 5, 1.2, 0.9),
+                           1);
     }
-    sum = max(sum,-sdf_plane(pos,-height));
+    sum = max(sum, -sdf_plane(pos, -height));
     dot = create_dot_expl(sum,GRAY);
-    
+
     dot.w = sdf_linear_normalize(dot.w, isoLevel);
     outputPoints[get_point_index(id, dotFieldSize)] = convert_dot_expl_to_dot(dot);
-    
-    if(dot.w < isoLevel)
+
+    if (dot.w < isoLevel)
         isConcreteFlagBuffer[0]++;
     else
         isAirFlagBuffer[0]++;

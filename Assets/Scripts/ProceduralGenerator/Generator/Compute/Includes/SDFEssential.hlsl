@@ -1,42 +1,54 @@
+// Some of the sdf functions is depracated
+// Use the sdf functions in SDFOperation.hlsl and SDFBasicShapes.hlsl instead
+
 #ifndef SDFESSENTIAL_HLSL
 #define SDFESSENTIAL_HLSL
-#include "..\Noise\fractalNoise.hlsl"
+#include "../Noise/fractalNoise.hlsl"
 
 #define FLT_MAX 3.402823466e+38
 #define SDF_MAX 1000.
 #define PI 3.14159265
 
-//SDF operations
+// SDF operations
 
-//Linearly normalize the SDF value to 0-1
-float sdf_linear_normalize(float value,float isoSurface)
+// Linearly normalize the SDF value to 0-1
+float sdf_linear_normalize(float value, float isoSurface)
 {
-    if(isoSurface==0.5f)
-        return clamp(1/(2*SDF_MAX)*value + isoSurface,0,1);
-    if(value<0)
+    if (isoSurface == 0.5f)
+        return clamp(1 / (2 * SDF_MAX) * value + isoSurface, 0, 1);
+    if (value < 0)
     {
-        return clamp(isoSurface/SDF_MAX*value+isoSurface,0,1);
-    }else
+        return clamp(isoSurface / SDF_MAX * value + isoSurface, 0, 1);
+    }
+    else
     {
-        return clamp((1-isoSurface)/SDF_MAX*value+isoSurface,0,1);
+        return clamp((1 - isoSurface) / SDF_MAX * value + isoSurface, 0, 1);
     }
 }
 
-float sdf_binary_normalize(float value,float isoLevel)
+// Linearly normalize the SDF value to 0-1 with the isosurface at 0.5
+float sdf_linear_normalize_with_standard_isosurface(float value)
+{
+    return clamp(1 / (2 * SDF_MAX) * value + 0.5, 0, 1);
+}
+
+float sdf_binary_normalize(float value, float isoLevel)
 {
     return value < isoLevel ? 0 : 1;
 }
 
-//Normalize the SDF value to 0-1
-//Not perfect because the isosurface should be between 0.2 and 0.8 but it just works
-float sdf_parabola_normalize(float value,float isoLevel)
+// Normalize the SDF value to 0-1
+// The isosurface should between 0.2 and 0.8
+float sdf_parabola_normalize(float value, float isoLevel)
 {
-    value = clamp(value,-SDF_MAX,SDF_MAX);
-    return clamp((1-2*isoLevel)/(2*SDF_MAX*SDF_MAX)*value*value + 1/(2*SDF_MAX)*value + isoLevel,0,1);
+    value = clamp(value, -SDF_MAX,SDF_MAX);
+    return clamp((1 - 2 * isoLevel) / (2 * SDF_MAX * SDF_MAX) * value * value + 1 / (2 * SDF_MAX) * value + isoLevel, 0,
+                 1);
 }
 
 
-//Calculate the normal of the SDF function
+// Calculate the normal of the SDF function
+// Unfortunatly, this marco is not working as intended due to its varying arguments
 #if 0
 #define CalcNormal(sdfFunc,normal,pos,...) do \
 {\
@@ -59,7 +71,7 @@ float get_perlin_noise_displacement(float3 position, float scale, float3 randomO
 
 float get_sin_displacement(float3 p, float scale)
 {
-    return sin(scale*p.x)*sin(scale*p.y)*sin(scale*p.z);
+    return sin(scale * p.x) * sin(scale * p.y) * sin(scale * p.z);
 }
 
 //Basic SDF functions
@@ -72,44 +84,44 @@ float sphere_sdf(float3 position, float3 origin, float radius)
 float box_sdf(float3 position, float3 origin, float3 size)
 {
     size /= 2;
-   const float3 p = position - origin;
+    const float3 p = position - origin;
     float3 q = abs(p) - size;
-    return length(max(q,0.))+min(max(q.x,max(q.y,q.z)),0.);
+    return length(max(q, 0.)) + min(max(q.x, max(q.y, q.z)), 0.);
 }
 
 float inf_cylinder_sdf(float3 position, float3 origin, float radius)
 {
-    return length(position.xz-origin.xz) - radius;
+    return length(position.xz - origin.xz) - radius;
 }
 
-float cut_sphere_sdf(float3 position, float3 origin,float r,float h)
+float cut_sphere_sdf(float3 position, float3 origin, float r, float h)
 {
     float3 p = position - origin;
-    p = float3(p.x,-p.y,p.z);
-    h*=-1;
-    
+    p = float3(p.x, -p.y, p.z);
+    h *= -1;
+
     // sampling independent computations (only depend on shape)
-    float w = sqrt(r*r-h*h);
+    float w = sqrt(r * r - h * h);
 
     // sampling dependant computations
-    float2 q = float2( length(p.xz), p.y );
-    const float s = max( (h-r)*q.x*q.x+w*w*(h+r-2.0*q.y), h*q.x-w*q.y );
-    return (s<0.0) ? length(q)-r :
-           (q.x<w) ? h - q.y     :
-                     length(q-float2(w,h));
+    float2 q = float2(length(p.xz), p.y);
+    const float s = max((h - r) * q.x * q.x + w * w * (h + r - 2.0 * q.y), h * q.x - w * q.y);
+    return (s < 0.0) ? length(q) - r : (q.x < w) ? h - q.y : length(q - float2(w, h));
 }
 
 
 //Island sdf
-float basic_astoroid_sdf(float3 origin,float3 position,float radius,float noiseScale,float noiseAmp ,float3 randomOffset)
+float basic_astoroid_sdf(float3 origin, float3 position, float radius, float noiseScale, float noiseAmp,
+                         float3 randomOffset)
 {
-    return sphere_sdf(position, origin, radius)+
-       noiseAmp* get_perlin_noise_displacement(position, noiseScale,randomOffset);
+    return sphere_sdf(position, origin, radius) +
+        noiseAmp * get_perlin_noise_displacement(position, noiseScale, randomOffset);
 }
 
-float bbasic_planet_sdf(float3 origin,float3 position,float radius,float noiseScale,float noiseAmp ,float3 randomOffset)
+float bbasic_planet_sdf(float3 origin, float3 position, float radius, float noiseScale, float noiseAmp,
+                        float3 randomOffset)
 {
-    return sphere_sdf(position, origin, radius)+
-       noiseAmp* fractalNoise(position/noiseScale + randomOffset,4,3,0.5);
+    return sphere_sdf(position, origin, radius) +
+        noiseAmp * fractalNoise(position / noiseScale + randomOffset, 4, 3, 0.5);
 }
 #endif

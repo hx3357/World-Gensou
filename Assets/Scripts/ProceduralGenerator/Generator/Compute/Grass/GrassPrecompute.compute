@@ -2,6 +2,7 @@
 #pragma kernel CSMain
 
 #include "../Noise/FastSnoise.hlsl"
+#include "../Includes/Hash.hlsl"
 #include "../Includes/QuaternionEssential.hlsl"
 
 struct GrassInput
@@ -16,8 +17,8 @@ struct GrassOutput
     float width;
     float darkness;
     float angle_xz;
-    float bend;
-    float3 euler_rotation;
+    float bend_xz;
+    float bend_y;
 };
 
 int grass_count;
@@ -49,9 +50,9 @@ void CSMain(uint3 id : SV_DispatchThreadID)
     const float3 position = input_grass_buffer[id.x].position;
 
     // Windless
-    const float xz_angle = f_snoise(position *10) * 3.14;
-    const float y_angle = 3.14/2 - windless_bend + windless_swing_strength * f_snoise(
-        (-position * 0.1+ time) * windless_swing_strength);
+    const float xz_angle = f_snoise(position * 10) * 3.14;
+    const float y_angle = 3.14 / 2 - windless_bend + windless_swing_strength * f_snoise(
+        (-position * 0.1 + time) * windless_swing_strength);
     const float4 xz_rotate_quaternion = quaternion_map_vec(float3(1, 0, 0), float3(cos(xz_angle), 0, sin(xz_angle)));
     const float4 y_rotate_quaternion = quaternion_map_vec(float3(0, 1, 0), float3(0, cos(y_angle), sin(y_angle)));
     const float4 windless_quaternion = xz_rotate_quaternion;
@@ -63,20 +64,20 @@ void CSMain(uint3 id : SV_DispatchThreadID)
 
     //const float4 final_quaternion = lerp(windless_quaternion, wind_quaternion, wind_strength);
     const float4 final_quaternion = windless_quaternion;
-    
-    const float3 final_dir_y = rotate_vector(float3(0,1,0), final_quaternion);
-    const float3 final_dir_xz = rotate_vector(float3(1,0,0), final_quaternion);
+
+    const float3 final_dir_y = rotate_vector(float3(0, 1, 0), final_quaternion);
+    const float3 final_dir_xz = rotate_vector(float3(1, 0, 0), final_quaternion);
     const float fin_angle_y = atan2(final_dir_y.y, final_dir_y.z);
     const float fin_angle_xz = atan2(final_dir_xz.z, final_dir_xz.x);
-    
+
 
     GrassOutput output;
     output.position = position;
-    output.height = 1.0;
+    output.height = 1;
     output.width = 1;
-    output.darkness = 0.5;
-    output.angle_xz = fin_angle_xz;
-    output.bend = 0;
-    output.euler_rotation = 0;
+    output.darkness = lerp(0.4, 1, clamp(f_snoise(0.001 * position),0,1));
+    output.angle_xz = get_hash(position);
+    output.bend_xz = windless_swing_strength;
+    output.bend_y = windless_bend;
     output_grass_buffer[id.x] = output;
 }

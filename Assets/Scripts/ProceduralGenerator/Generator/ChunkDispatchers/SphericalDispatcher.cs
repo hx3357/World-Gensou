@@ -9,45 +9,43 @@ using UnityEngine;
 /// </summary>
 public class SphericalDispatcher : IChunkDispatcher
 {
-    
-    int chunkResolution = 31;
-    
+    private readonly int chunkResolution;
+
     public SphericalDispatcher(int m_chunkResolution)
     {
         chunkResolution = m_chunkResolution;
     }
-    
-    public void DispatchChunks( SurroundBox chunkGroupSurroundBox, Dictionary<Vector3Int,int> activeChunks,
-         Vector3 playerPosition, float maxViewDistance, 
-        ref List<(Vector3Int,int)> chunksToGenerate, ref List<Vector3Int> chunksToDestroy, ref object[] chunkParameters)
+
+    public void DispatchChunks(SurroundBox chunkGroupSurroundBox, Dictionary<Vector3Int, int> activeChunks,
+        Vector3 playerPosition, float maxViewDistance,
+        out List<(Vector3Int coord, int resolution)> chunksToGenerate, out List<Vector3Int> chunksToDestroy,
+        out object[] chunkParameters)
     {
-        Vector3Int _playerChunkCoord = Chunk.GetChunkCoordByPosition(playerPosition);
-        int celledMaxViewDistance = Mathf.CeilToInt(maxViewDistance)+1;
-        chunksToGenerate = new List<(Vector3Int,int)>();
+        var _playerChunkCoord = Chunk.GetChunkCoordByPosition(playerPosition);
+        var celledMaxViewDistance = Mathf.CeilToInt(maxViewDistance) + 1;
+        chunksToGenerate = new List<(Vector3Int, int)>();
         chunksToDestroy = new List<Vector3Int>();
-      
-        for(int x = -celledMaxViewDistance;x<= celledMaxViewDistance;x++)
-        for(int y = -celledMaxViewDistance;y<= celledMaxViewDistance;y++)
-        for(int z = -celledMaxViewDistance;z<=celledMaxViewDistance;z++)
+
+        for (var x = -celledMaxViewDistance; x <= celledMaxViewDistance; x++)
+        for (var y = -celledMaxViewDistance; y <= celledMaxViewDistance; y++)
+        for (var z = -celledMaxViewDistance; z <= celledMaxViewDistance; z++)
         {
-            Vector3Int chunkCoord = _playerChunkCoord + new Vector3Int(x,y,z);
-            float distance = Vector3Int.Distance(chunkCoord,_playerChunkCoord);
-            if(distance <= maxViewDistance&&chunkGroupSurroundBox.IsInSurroundBox(chunkCoord))
+            var chunkCoord = _playerChunkCoord + new Vector3Int(x, y, z);
+            var distance = Vector3Int.Distance(chunkCoord, _playerChunkCoord);
+            if (distance <= maxViewDistance && chunkGroupSurroundBox.IsInSurroundBox(chunkCoord))
             {
-                if(!activeChunks.ContainsKey(chunkCoord))
-                {
-                    chunksToGenerate.Add((chunkCoord,chunkResolution));
-                }
+                if (!activeChunks.ContainsKey(chunkCoord)) chunksToGenerate.Add((chunkCoord, chunkResolution));
             }
             else
             {
-                if(activeChunks.ContainsKey(chunkCoord))
-                {
-                    chunksToDestroy.Add(chunkCoord);
-                }
+                if (activeChunks.ContainsKey(chunkCoord)) chunksToDestroy.Add(chunkCoord);
             }
         }
+
+        chunkParameters = null;
     }
-    
-    public void ShowDebugGizmos() { }
+
+    public void ShowDebugGizmos()
+    {
+    }
 }

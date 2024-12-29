@@ -8,18 +8,18 @@ public static class VoxelToIslandSFGAdapter
     {
         return Array.ConvertAll(parameters, x =>
         {
-            ChunkParameter chunkParameter = (ChunkParameter)x;
+            var chunkParameter = (ChunkParameter)x;
             return (object)ToIslandSFGParameter(chunkParameter);
         });
     }
 
-    static SDFIslandSFGParameter ToIslandSFGParameter(ChunkParameter chunkParameter)
+    private static SDFIslandSFGParameter ToIslandSFGParameter(ChunkParameter chunkParameter)
     {
-        Vector4[] islandPositions = new Vector4[chunkParameter.voxels.Count];
-        Vector4[] islandParameters = new Vector4[chunkParameter.voxels.Count];
-        for (int i = 0; i < chunkParameter.voxels.Count; i++)
+        var islandPositions = new Vector4[chunkParameter.voxels.Count];
+        var islandParameters = new Vector4[chunkParameter.voxels.Count];
+        for (var i = 0; i < chunkParameter.voxels.Count; i++)
         {
-            Voxel currentVoxel = chunkParameter.voxels[i];
+            var currentVoxel = chunkParameter.voxels[i];
 
             islandPositions[i] = new Vector4(currentVoxel.center.x, currentVoxel.center.y, currentVoxel.center.z,
                 currentVoxel.voxelType);

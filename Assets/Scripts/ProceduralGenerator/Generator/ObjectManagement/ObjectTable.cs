@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-[CreateAssetMenu(fileName = "ObjectTable", menuName = "ObjectTable" )]
+[CreateAssetMenu(fileName = "ObjectTable", menuName = "PCG")]
 public class ObjectTable : ScriptableObject
 {
     [Serializable]
@@ -19,12 +19,8 @@ public class ObjectTable : ScriptableObject
     public PlaceableObjectData FindPlaceableObjectDataByName(string objName)
     {
         foreach (var placeableObjectData in placeableObjects)
-        {
             if (objName == placeableObjectData.objectName)
-            {
                 return placeableObjectData;
-            }
-        }
 
         return default;
     }
@@ -32,14 +28,9 @@ public class ObjectTable : ScriptableObject
     public PlaceableObjectData FindPlaceableObjectDataByInstance(ObjectPlacer.PlaceableObject obj)
     {
         foreach (var placeableObjectData in placeableObjects)
-        {
             if (obj.objectName == placeableObjectData.objectName)
-            {
                 return placeableObjectData;
-            }
-        }
 
         return default;
     }
 }
-
