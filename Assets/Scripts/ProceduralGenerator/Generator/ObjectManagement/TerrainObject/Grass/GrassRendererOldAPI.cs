@@ -83,7 +83,7 @@ public class GrassRendererOldAPI : MonoSingleton<GrassRendererOldAPI>, IGrassRen
         set => maxInstanceCount = value;
     }
 
-    public void DrawGrass(Vector3[] positions, Vector3 playerPos)
+    public void DrawGrass(Vector3[] positions, Vector3 playerPos, GrassInteractable[] interactables)
     {
         int currentInstanceCount;
         if (positions.Length > maxInstanceCount)

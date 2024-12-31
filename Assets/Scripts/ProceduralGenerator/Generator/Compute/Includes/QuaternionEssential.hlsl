@@ -221,6 +221,7 @@ float4x4 quaternion_to_matrix(float4 quat)
     return m;
 }
 
+// No need to normalize the input vector
 float4 quaternion_map_vec(float3 v1, float3 v2)
 {
     v1 = normalize(v1);
@@ -245,6 +246,37 @@ float3 quaternion_rotate(float3 v, float4 q)
 {
     float3 t = 2.0 * cross(q.xyz, v);
     return v + q.w * t + cross(q.xyz, t);
+}
+
+float3 quaternion_to_euler(float4 q) {
+    float qw = q.w;
+    float qx = q.x;
+    float qy = q.y;
+    float qz = q.z;
+    
+    float sinX = 2.0 * (qw * qx - qy * qz);
+    float x; 
+    if (abs(sinX) >= 1.0) {
+        x = (sinX >= 0.0) ? (PI / 2.0) : -(PI / 2.0);
+    } else {
+        x = asin(sinX);
+    }
+    
+    float z = atan2(2.0 * (qx * qy + qw * qz), 1.0 - 2.0 * (qx * qx + qz * qz));
+    
+    float y = atan2(2.0 * (qy * qz + qw * qx), 1.0 - 2.0 * (qx * qx + qy * qy));
+    
+    return float3(x, y, z); 
+}
+
+float4 SlerpToIdentity(float4 q, float t) {
+    q = normalize(q);
+    float4 identity = float4(0, 0, 0, 1);
+    float dot1 =dot(q, identity);
+    dot1 = clamp(dot1, -1.0, 1.0);
+    float theta = acos(dot1) * t;
+    float4 qPerp = normalize(q - identity * dot1);
+    return identity * cos(theta) + qPerp * sin(theta);
 }
 
 #endif

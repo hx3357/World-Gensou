@@ -334,7 +334,7 @@ namespace ChunkDispatchers.VoxelBasedDispatch
         {
             Gizmos.color = isUpdateVoxel ? Color.blue : Color.red;
             Gizmos.DrawWireCube(center, Vector3.one * worldSize);
-            Handles.Label(center, chunkResolution.ToString());
+            //Handles.Label(center, chunkResolution.ToString());
         }
     }
 }

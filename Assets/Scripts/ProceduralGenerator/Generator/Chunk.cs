@@ -18,7 +18,9 @@ public class Chunk : MonoBehaviour
     public Vector3Int chunkCoord;
     public Vector4[] dotField;
     public Vector3Int dotFieldSize;
+
     public int chunkResolution;
+    public bool isHighestResolution => chunkResolution == ChunkLODManager.Instance.GetHightestResolution();
 
     public bool isShowVolumeGizmo;
     public bool isShowDotFieldGizmo = false;
@@ -87,6 +89,14 @@ public class Chunk : MonoBehaviour
 
     public bool TrySetResolution(int resolution)
     {
+        // Awlays update hight resolution chunks
+        // Temporarily hack before mesh sampler is implemented
+        // TODO: Delete this branch when mesh sampler is implemented
+        if (resolution == ChunkLODManager.Instance.GetHightestResolution())
+        {
+            return false;
+        }
+        
         var isContain = lodMeshDict.ContainsKey(resolution);
         if (isContain)
         {
@@ -95,7 +105,6 @@ public class Chunk : MonoBehaviour
             if (meshFilter != null)
                 meshFilter.mesh = mesh;
         }
-
         return isContain;
     }
 

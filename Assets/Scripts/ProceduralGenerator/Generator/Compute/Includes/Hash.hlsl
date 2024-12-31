@@ -27,9 +27,6 @@ uint3 pcg3d(uint3 v)
 }
 
 // Hash function from H. Schechter & R. Bridson, goo.gl/RXiKaH
-
-
-
 uint HRHash(uint s)
 {
     s ^= 2747636419u;

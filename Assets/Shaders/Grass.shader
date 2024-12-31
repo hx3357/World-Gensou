@@ -16,7 +16,7 @@ Shader "Custom/Grass"
         HLSLINCLUDE
         
         #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
-
+        #include "Assets/Scripts/ProceduralGenerator/Generator/Compute/Includes/QuaternionEssential.hlsl"
         #include "Assets/Scripts/ProceduralGenerator/Generator/Compute/Noise/FastSnoise.hlsl"
 
         CBUFFER_START(UnityPerMaterial)
@@ -29,9 +29,8 @@ Shader "Custom/Grass"
             float height;
             float width;
             float darkness;
-            float angle_xz;
-            float bend_xz;
-            float bend_y;
+            float4 origin_quaternion;
+            float4 disturbance_quaternion;
         };
 
 
@@ -72,37 +71,23 @@ Shader "Custom/Grass"
                 float darkness : TEXCOORD0;
             };
 
-            float3 rotate_xz(float3 v, float angle)
+            float4 GetBendedVertex(float4 vertex,float height,float4 origin_quaterion, float4 bend_quaternion)
             {
-                float s = sin(angle);
-                float c = cos(angle);
-                return float3(v.x * c - v.z * s, v.y, v.x * s + v.z * c);
-            }
-
-            float3 rotate_yz(float3 v, float angle)
-            {
-                float s = sin(angle);
-                float c = cos(angle);
-                return float3(v.x, v.y * c - v.z * s, v.y * s + v.z * c);
-            }
-
-            float3 GetBendedVertex(float3 vertex, float bend,float angle_xz,float height)
-            {
-                float3 bended_vertex = rotate_yz(vertex, lerp(0, bend, vertex.y / height));
-                bended_vertex = rotate_xz(bended_vertex,lerp(0, angle_xz, vertex.y / height));
-                return bended_vertex;
+                float4 final_quaterion = q_slerp(origin_quaterion,bend_quaternion,vertex.y/height);
+                return qmul(final_quaterion,vertex);
             }
 
             // Vertex Shader
             v2f UnlitPassVertex(a2v IN, uint id : SV_InstanceID)
             {
                 v2f OUT;
-                float3 obj_pos = IN.positionOS.xyz;
+                float4 obj_pos = IN.positionOS;
                 InstanceData instance = instance_buffer[id];
-                obj_pos *= float3(instance.width, instance.height, 1);
-                obj_pos = rotate_xz(obj_pos, instance.angle_xz);
-                obj_pos = GetBendedVertex(obj_pos, instance.bend_y,instance.bend_xz,
-                    grass_mesh_size.y * instance.height);
+                
+                obj_pos *= float4(instance.width, instance.height, 1,1);
+                obj_pos = GetBendedVertex(obj_pos,grass_mesh_size.y * instance.height,
+                    instance.origin_quaternion,instance.disturbance_quaternion);
+                
                 const VertexPositionInputs positionInputs = GetVertexPositionInputs(obj_pos);
                 const float3 position = instance.position + positionInputs.positionWS;
                 OUT.positionCS = TransformWorldToHClip(position);

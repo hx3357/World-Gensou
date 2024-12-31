@@ -10,7 +10,7 @@ public class FirstPersonController : MonoBehaviour
     private float verticalRotation;
     private float horizontalRotation;
     
-    private int isAbleToControlCounter;
+    private int isAbleToControlCounter=1;
 
     private void Start()
     {

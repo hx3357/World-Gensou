@@ -12,10 +12,15 @@ public class GrassRenderer : MonoSingleton<GrassRenderer>, IGrassRenderer
     public uint maxInstanceCount = 10000;
     public ComputeShader grassComputeShader;
     public Camera mainCamera;
-    [InspectorLabel("Grass properties")] public Vector3 windDir;
+    [InspectorLabel("Grass properties")] 
+    // Sphere coordinate
+    public Vector3 windDir;
     public float windStrength;
     public float windlessBend;
+    public float windlessSpread;
     public float windlessSwingStrength;
+    public float windlessSwingSpeed;
+    public float grassBaseHeight;
 
     private RenderParams renderParams;
     private GraphicsBuffer commandBuffer;
@@ -31,6 +36,18 @@ public class GrassRenderer : MonoSingleton<GrassRenderer>, IGrassRenderer
     private static readonly int InputGrassBuffer = Shader.PropertyToID("input_grass_buffer");
     private static readonly int OutputGrassBuffer = Shader.PropertyToID("output_grass_buffer");
     private static readonly int GrassMeshSize = Shader.PropertyToID("grass_mesh_size");
+    private IGrassRenderer _grassRendererImplementation;
+    private static readonly int Time1 = Shader.PropertyToID("time");
+    private static readonly int WindDirection = Shader.PropertyToID("wind_direction");
+    private static readonly int WindStrength = Shader.PropertyToID("wind_strength");
+    private static readonly int WindlessBend = Shader.PropertyToID("windless_bend");
+    private static readonly int WindlessSpread = Shader.PropertyToID("windless_spread");
+    private static readonly int WindlessSwingStrength = Shader.PropertyToID("windless_swing_strength");
+    private static readonly int WindlessSwingSpeed = Shader.PropertyToID("windless_swing_speed");
+    private static readonly int GrassBaseHeight = Shader.PropertyToID("grass_base_height");
+    private static readonly int InteractPositions = Shader.PropertyToID("interact_positions");
+    private static readonly int InteractRadius = Shader.PropertyToID("interact_radius");
+    private static readonly int InteractableCount = Shader.PropertyToID("interactable_count");
 
     private struct GrassPrecomputeData
     {
@@ -91,7 +108,7 @@ public class GrassRenderer : MonoSingleton<GrassRenderer>, IGrassRenderer
         commandBuffer?.Dispose();
     }
 
-    public void DrawGrass(Vector3[] positions, Vector3 playerPos)
+    public void DrawGrass(Vector3[] positions, Vector3 playerPos, GrassInteractable[] interactables)
     {
         uint currentInstanceCount;
         if (positions.Length > maxInstanceCount)
@@ -110,11 +127,30 @@ public class GrassRenderer : MonoSingleton<GrassRenderer>, IGrassRenderer
         inputGrassBuffer.SetData(positions);
         grassComputeShader.SetBuffer(0, InputGrassBuffer, inputGrassBuffer);
         grassComputeShader.SetBuffer(0, OutputGrassBuffer, outputGrassBuffer);
-        grassComputeShader.SetFloat("time", Time.unscaledTime);
-        grassComputeShader.SetVector("wind_direction", windDir);
-        grassComputeShader.SetFloat("wind_strength", windStrength);
-        grassComputeShader.SetFloat("windless_bend", windlessBend);
-        grassComputeShader.SetFloat("windless_swing_strength", windlessSwingStrength);
+        grassComputeShader.SetFloat(Time1, Time.unscaledTime);
+        grassComputeShader.SetVector(WindDirection, windDir);
+        grassComputeShader.SetFloat(WindStrength, windStrength);
+        grassComputeShader.SetFloat(WindlessBend, windlessBend);
+        grassComputeShader.SetFloat(WindlessSpread, windlessSpread);
+        grassComputeShader.SetFloat(WindlessSwingStrength, windlessSwingStrength);
+        grassComputeShader.SetFloat(WindlessSwingSpeed, windlessSwingSpeed);
+        grassComputeShader.SetFloat(GrassBaseHeight, grassBaseHeight);
+
+        if (interactables != null)
+        {
+            (Vector4[] interactablePositions, float[] interactableRadius) = GrassInteractable.ToArray(interactables);
+            grassComputeShader.SetVectorArray(InteractPositions,interactablePositions);
+            grassComputeShader.SetFloats(InteractRadius,interactableRadius);
+            grassComputeShader.SetInt(InteractableCount,interactables.Length);
+        }
+        else
+        {
+            grassComputeShader.SetVectorArray(InteractPositions,default);
+            grassComputeShader.SetFloats(InteractRadius,default);
+            grassComputeShader.SetInt(InteractableCount,0);
+        }
+        
+        
         grassComputeShader.SetInt(GrassCount, (int)currentInstanceCount);
         grassComputeShader.Dispatch(0, 
             Mathf.CeilToInt(currentInstanceCount / (float)threadGroupSizeX), 1, 1);

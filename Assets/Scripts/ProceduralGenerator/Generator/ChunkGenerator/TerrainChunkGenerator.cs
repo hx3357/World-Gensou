@@ -259,6 +259,12 @@ public class TerrainChunkGenerator : MonoBehaviour, IChunkGenerator
         chunk.SetMeshAndResolution(chunkMesh, _chunkSize.x);
         chunk.SetMaterial(chunkMaterial);
         chunk.chunkResolution = _chunkSize.x;
+        if (chunkMesh.vertexCount >= 4)
+        {
+            var meshCollider = chunkObject.AddComponent<MeshCollider>();
+            meshCollider.sharedMesh = chunkMesh;
+            meshCollider.convex = true;
+        }
         chunkDict.TryAdd(m_origin, chunk);
         currentProducingChunkSet.Remove(_origin);
     }

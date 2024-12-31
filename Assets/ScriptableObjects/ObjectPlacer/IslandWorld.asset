@@ -16,5 +16,5 @@ MonoBehaviour:
   - objectName: Lake
     gameObjectPrefab: {fileID: 2441112162804711157, guid: 4b5d8330814781e4da8b299a79e0bcc0,
       type: 3}
-    viewDistance: 23
+    viewDistance: 20
     maxCount: 30

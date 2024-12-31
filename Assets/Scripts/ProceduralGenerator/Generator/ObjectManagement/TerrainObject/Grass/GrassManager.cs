@@ -12,10 +12,17 @@ public class GrassManager : MonoSingleton<GrassManager>, ITerrainObjectManager
     public bool isGrassEnabled = true;
     public float maxViewDistance = 200;
     public Transform playerTransform;
+    public GrassInteractableDetector[] interactableDectors;
 
     private readonly HashSet<Vector3> visibleGrassSet = new();
     private Vector3 lastPlayerPos;
     private IGrassRenderer grassRenderer;
+
+    protected override void Awake()
+    {
+        base.Awake();
+        interactableDectors = GameObject.FindObjectsOfType<GrassInteractableDetector>();
+    }
 
     private void Start()
     {
@@ -24,7 +31,24 @@ public class GrassManager : MonoSingleton<GrassManager>, ITerrainObjectManager
 
     private void Update()
     {
-        if (isGrassEnabled) grassRenderer.DrawGrass(visibleGrassSet.ToArray(), playerTransform.position);
+        if (isGrassEnabled)
+        {
+            List<GrassInteractable> curInteractables = null;
+            if (interactableDectors.Length > 1)
+            {
+                curInteractables = new();
+                foreach (var dector in interactableDectors)
+                {
+                    curInteractables.AddRange(dector.GetInteractableObjects());
+                }
+            }
+            else if(interactableDectors.Length == 1)
+            {
+                curInteractables = interactableDectors[0].GetInteractableObjects();
+            }
+            
+            grassRenderer.DrawGrass(visibleGrassSet.ToArray(), playerTransform.position, curInteractables?.ToArray());
+        }
     }
 
     public void PlaceObject(Vector3 worldPosition, Vector3 objectSize, Vector3 objectRotation)
@@ -36,8 +60,6 @@ public class GrassManager : MonoSingleton<GrassManager>, ITerrainObjectManager
 
     public void UpdateObjects(Vector3 playerPosition)
     {
-        ProfilerMarker m = new ProfilerMarker("GrassManager.UpdateObjects");
-        m.Begin();
         // CPU Bottleneck
         var visibleSetRemoveList = new List<Vector3>();
         
@@ -55,7 +77,6 @@ public class GrassManager : MonoSingleton<GrassManager>, ITerrainObjectManager
             visibleGrassSet.Remove(visibleSetRemoveList[i]);
         
         lastPlayerPos = playerPosition;
-        m.End();
     }
     
     

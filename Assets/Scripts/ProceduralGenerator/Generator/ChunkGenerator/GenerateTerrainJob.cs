@@ -107,14 +107,14 @@ internal struct GenerateTerrainJob : IJob
                 dotTypes.z = color.a;
                 currentVertexIndex++;
             }
+            
+            indices.Add(vertexIndexMap[triangle.p3]);
 
             if (dotTypes is not { x: 0, y: 0, z: 0 })
             {
                 float triangleArea = math.length(math.cross(triangle.p2 - triangle.p1, triangle.p3 - triangle.p1)) / 2;
                 PlaceObject(dotTypes, triangleArea, triangle.p1, triangle.p2, triangle.p3);
             }
-
-            indices.Add(vertexIndexMap[triangle.p3]);
         }
     }
 

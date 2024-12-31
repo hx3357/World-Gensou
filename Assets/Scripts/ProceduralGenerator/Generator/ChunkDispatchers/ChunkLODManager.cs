@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using UnityEngine;
 
 public class ChunkLODManager : MonoSingleton<ChunkLODManager>
 {
@@ -30,5 +31,15 @@ public class ChunkLODManager : MonoSingleton<ChunkLODManager>
 
         return fallbackResolution;
     }
-    
+
+    public int GetHightestResolution()
+    {
+        int highestResolution = 0;
+        foreach (var kvPair in distanceToChunkResolution)
+        {
+            highestResolution = Mathf.Max(highestResolution, kvPair.Value);
+        }
+
+        return highestResolution;
+    }
 }

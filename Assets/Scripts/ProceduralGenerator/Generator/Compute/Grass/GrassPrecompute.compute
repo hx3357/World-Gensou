@@ -1,6 +1,8 @@
 // Each #kernel tells which function to compile; you can have many kernels
 #pragma kernel CSMain
 
+#define MAX_INTERACTABLE_COUNT 10
+
 #include "../Noise/FastSnoise.hlsl"
 #include "../Includes/Hash.hlsl"
 #include "../Includes/QuaternionEssential.hlsl"
@@ -16,9 +18,8 @@ struct GrassOutput
     float height;
     float width;
     float darkness;
-    float angle_xz;
-    float bend_xz;
-    float bend_y;
+    float4 origin_quaternion;
+    float4 disturbance_quaternion;
 };
 
 int grass_count;
@@ -26,17 +27,41 @@ float time;
 float3 wind_direction;
 float wind_strength;
 float windless_bend;
+float windless_spread;
 float windless_swing_strength;
+float windless_swing_speed;
+float grass_base_height;
+
+float4 interact_positions[MAX_INTERACTABLE_COUNT];
+float interact_radius[MAX_INTERACTABLE_COUNT];
+int interactable_count;
 
 StructuredBuffer<GrassInput> input_grass_buffer;
 RWStructuredBuffer<GrassOutput> output_grass_buffer;
 
-float3 rotate(float3 pos, float xz_angle, float y_angle)
+float3 sphere_to_cartesian(float2 sphere_coord)
 {
-    float3 result = pos;
-    result.xz = float2(cos(xz_angle) * pos.x - sin(xz_angle) * pos.z, sin(xz_angle) * pos.x + cos(xz_angle) * pos.z);
-    result.yz = float2(cos(y_angle) * pos.y - sin(y_angle) * pos.z, sin(y_angle) * pos.y + cos(y_angle) * pos.z);
-    return result;
+    float theta_s,theta_c;
+    sincos(sphere_coord.x,theta_s,theta_c);
+    float phi_s,phi_c;
+    sincos(sphere_coord.y,phi_s,phi_c);
+    return float3(theta_s*phi_c,theta_c,theta_s*phi_s);
+}
+
+float3 rotate_around_y_90(float3 v)
+{
+    float3 rotatedVector;
+    rotatedVector.x = -v.z;
+    rotatedVector.y = v.y;
+    rotatedVector.z = v.x;
+    return rotatedVector;
+}
+
+float3 get_interact_dir(float3 interactable_origin,float3 grass_position)
+{
+    float3 origin_to_grass = grass_position - interactable_origin;
+    const float3 left_dir = rotate_around_y_90(float3(origin_to_grass.x,0,origin_to_grass.z));
+    return normalize(cross(left_dir,origin_to_grass));
 }
 
 [numthreads(64,1,1)]
@@ -50,34 +75,43 @@ void CSMain(uint3 id : SV_DispatchThreadID)
     const float3 position = input_grass_buffer[id.x].position;
 
     // Windless
-    const float xz_angle = f_snoise(position * 10) * 3.14;
-    const float y_angle = 3.14 / 2 - windless_bend + windless_swing_strength * f_snoise(
-        (-position * 0.1 + time) * windless_swing_strength);
-    const float4 xz_rotate_quaternion = quaternion_map_vec(float3(1, 0, 0), float3(cos(xz_angle), 0, sin(xz_angle)));
-    const float4 y_rotate_quaternion = quaternion_map_vec(float3(0, 1, 0), float3(0, cos(y_angle), sin(y_angle)));
-    const float4 windless_quaternion = xz_rotate_quaternion;
+    const float windless_r = windless_spread * get_hash(position);
+    const float windless_theta = get_hash(position) * 2 * PI;
+    const float3 origin_dir = float3(windless_r * cos(windless_theta),1,windless_r * sin(windless_theta));
+    const float4 windless_xz_rotation = quaternion_map_vec(float3(0, 0, 1),float3(cos(windless_theta),0,sin(windless_theta)));
+    const float4 windless_quaternion = qmul(windless_xz_rotation,quaternion_map_vec(float3(0, 1, 0), origin_dir));     
 
-    // Wind
-    float3 lerped_wind_dir = lerp(float3(0, 1, 0), normalize(wind_direction), wind_strength);
-    lerped_wind_dir += f_snoise(position + 0.1 * wind_strength * time) * wind_strength;
-    const float4 wind_quaternion = quaternion_map_vec(float3(0, 1, 0), lerped_wind_dir);
+    // Disturbance
+    const float3 windless_swing_dir =
+        float3(f_snoise(position+windless_swing_speed*time),1,f_snoise(2.1*position+windless_swing_speed*time))
+        * windless_swing_strength;
+    const float3 wind_dir_cartesian = lerp(float3(0,1,0), sphere_to_cartesian(wind_direction),clamp(wind_strength,0,1));
+    const float wind_swing_speed = wind_strength;
+    const float3 wind_swing_dir =
+        float3(f_snoise(position+wind_swing_speed*time),1,f_snoise(2.1*position+wind_swing_speed*time))
+        * wind_strength;
+    float4 disturbance_quaternion =qmul(quaternion_map_vec(float3(0, 1, 0),wind_swing_dir),
+        qmul(quaternion_map_vec(float3(0, 1, 0),wind_dir_cartesian) ,
+            quaternion_map_vec(float3(0, 1, 0),windless_swing_dir + origin_dir)));
 
-    //const float4 final_quaternion = lerp(windless_quaternion, wind_quaternion, wind_strength);
-    const float4 final_quaternion = windless_quaternion;
-
-    const float3 final_dir_y = rotate_vector(float3(0, 1, 0), final_quaternion);
-    const float3 final_dir_xz = rotate_vector(float3(1, 0, 0), final_quaternion);
-    const float fin_angle_y = atan2(final_dir_y.y, final_dir_y.z);
-    const float fin_angle_xz = atan2(final_dir_xz.z, final_dir_xz.x);
-
+    // Interact
+    for(int i = 0;i<interactable_count;i++)
+    {
+        const float grass_distance = distance(position,interact_positions[i]);
+        if(grass_distance<interact_radius[i])
+        {
+            const float4 interact_quaternion =
+                quaternion_map_vec(float3(0,1,0),get_interact_dir(interact_positions[i],position));
+            disturbance_quaternion = q_slerp(interact_quaternion,disturbance_quaternion,grass_distance/interact_radius[i]);
+        }
+    }
 
     GrassOutput output;
     output.position = position;
-    output.height = 1;
-    output.width = 1;
-    output.darkness = lerp(0.4, 1, clamp(f_snoise(0.001 * position),0,1));
-    output.angle_xz = get_hash(position);
-    output.bend_xz = windless_swing_strength;
-    output.bend_y = windless_bend;
+    output.height = (get_hash(position)%100/100)*0.5+grass_base_height;
+    output.width = (get_hash(position)%100/100)*0.5+0.7;
+    output.darkness = 1 - abs(get_hash(-position))*0.6;
+    output.origin_quaternion = windless_quaternion;
+    output.disturbance_quaternion = disturbance_quaternion;
     output_grass_buffer[id.x] = output;
 }
