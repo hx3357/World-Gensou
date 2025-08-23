@@ -11,11 +11,11 @@
 #define BLACK float3(0,0,0)
 #define GRAY float3(0.5,0.5,0.5)
 
-#define GRASS float3(0.2,0.8,0.2)
-#define SAND float3(0.8,0.8,0.2)
-#define WATER float3(0.2,0.2,0.8)
-#define ROCK float3(0.5,0.5,0.5)
-#define SNOW float3(1,1,1)
+// 1/3^0.5 = 0.5773
+#define GRASS float3(0.5773,0.5773,0.5773)
+#define SAND float3(0.5773,-0.5773,-0.5773)
+#define ROCK float3(-0.5773,-0.5773,0.5773)
+#define METAL float3(-0.5773,0.5773,-0.5773)
 
 int get_impl_color(float3 color, int dot_type)
 {

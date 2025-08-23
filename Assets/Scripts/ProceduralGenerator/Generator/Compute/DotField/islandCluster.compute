@@ -50,8 +50,10 @@ void CSMain(uint3 id : SV_DispatchThreadID)
     dot.w = sdf_linear_normalize(dot.w, isoLevel);
     outputPoints[get_point_index(id, dotFieldSize)] = convert_dot_expl_to_dot(dot);
 
-    if (dot.w < isoLevel)
-        isConcreteFlagBuffer[0]++;
-    else
-        isAirFlagBuffer[0]++;
+    if (dot.w < isoLevel && isConcreteFlagBuffer[0] == 0)
+        InterlockedAdd(isConcreteFlagBuffer[0], 1);
+        //isConcreteFlagBuffer[0]++;
+    else if(isAirFlagBuffer[0] == 0)
+        InterlockedAdd(isAirFlagBuffer[0], 1);
+        //isAirFlagBuffer[0]++;
 }

@@ -22,7 +22,7 @@ DotExpl floating_rock_sdf(float3 pos, float3 origin, float baseRadius, float hei
 
     const float color_lerp = clamp((pos.y - height / 8 - origin.y) * 0.05 + 0.5, 0, 1);
 
-    return create_dot_expl(dot, lerp(WHITE,GRASS, color_lerp), color_lerp > 0.7 ? DOT_TYPE_GRASS : DOT_TYPE_NORMAL);
+    return create_dot_expl(dot, lerp(METAL,GRASS, color_lerp), color_lerp > 0.7 ? DOT_TYPE_GRASS : DOT_TYPE_NORMAL);
 }
 
 #endif

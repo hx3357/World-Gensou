@@ -206,6 +206,7 @@ public class TerrainChunkGenerator : MonoBehaviour, IChunkGenerator
             vertexIndexMap = new NativeHashMap<float3, int>(_triangles.Length, Allocator.TempJob),
             TerrainPlaceableObjectParameter = _curTerrainPlaceableObjectParameter,
             vertColors = new NativeList<Color32>(0, Allocator.TempJob),
+            uvs = new NativeList<float2>(0, Allocator.TempJob),
             TerrainPlaceableObjectDataBiltable = new TerrainPlaceableObjectDataBiltable(0)
         };
 
@@ -222,10 +223,12 @@ public class TerrainChunkGenerator : MonoBehaviour, IChunkGenerator
         var vertices = new Vector3[job.vertices.Length];
         var indices = new int[job.indices.Length];
         var vertColors = new Color32[job.vertColors.Length];
+        //var uvs = new Vector2[job.uvs.Length];
 
         job.vertices.AsArray().Reinterpret<Vector3>().CopyTo(vertices);
         job.indices.AsArray().CopyTo(indices);
         job.vertColors.AsArray().CopyTo(vertColors);
+        //job.uvs.AsArray().Reinterpret<Vector2>().CopyTo(uvs);
         
         var terrainPlaceableObjectData = job.TerrainPlaceableObjectDataBiltable.GetPlaceableObjectData();
         terrainPlaceableObjectData.SubmitPlaceableObjectData();
@@ -235,6 +238,7 @@ public class TerrainChunkGenerator : MonoBehaviour, IChunkGenerator
         chunkMesh.vertices = vertices;
         chunkMesh.triangles = indices;
         chunkMesh.colors32 = vertColors;
+        //chunkMesh.uv = uvs;
         chunkMesh.RecalculateNormals();
         chunkMesh.RecalculateBounds();
         chunkMesh.RecalculateTangents();

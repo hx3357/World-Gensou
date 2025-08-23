@@ -3,6 +3,7 @@ using Unity.Jobs;
 using Unity.Collections;
 using Unity.Burst;
 using Unity.Mathematics;
+using Unity.VisualScripting;
 
 /// <summary>
 /// Used to generate mesh from triangles and gather position data of the placeable objects 
@@ -15,6 +16,8 @@ internal struct GenerateTerrainJob : IJob
     public NativeList<float3> vertices;
     public NativeList<Color32> vertColors;
     public NativeList<int> indices;
+    public NativeList<float2> uvs;
+    
     public NativeHashMap<float3, int> vertexIndexMap;
 
     [ReadOnly] public TerrainPlaceableObjectParameter TerrainPlaceableObjectParameter;
@@ -125,6 +128,7 @@ internal struct GenerateTerrainJob : IJob
         vertColors.Dispose();
         vertexIndexMap.Dispose();
         triangles.Dispose();
+        uvs.Dispose();
         TerrainPlaceableObjectDataBiltable.Dispose();
     }
 }

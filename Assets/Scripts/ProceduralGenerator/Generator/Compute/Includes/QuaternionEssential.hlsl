@@ -224,16 +224,27 @@ float4x4 quaternion_to_matrix(float4 quat)
 // No need to normalize the input vector
 float4 quaternion_map_vec(float3 v1, float3 v2)
 {
+    // Quaternion is something like cos(theta/2) + sin(theta/2) * (x * i + y * j + z * k)
+    // where theta is the angle between v1 and v2
     v1 = normalize(v1);
     v2 = normalize(v2);
+    // The vector whose orientation is "on the half of" v1 and v2
+    // to represent the "theta/2" coherent with the quaternion definition
     float3 v = v1 + v2;
     v = normalize(v);
     float4 q = 0;
+    // cos(theta/2)
     q.w = dot(v, v2);
+    // sin(theta/2) * (x * i + y * j + z * k)
     q.xyz = cross(v, v2);
     return q;
 }
 
+// Rules:
+// i*j = k
+// j*k = i
+// k*i = j
+// i^2 = j^2 = k^2 = -1
 float4 quaternion_mul(float4 q1, float4 q2)
 {
     float4 q = 0;
@@ -242,6 +253,7 @@ float4 quaternion_mul(float4 q1, float4 q2)
     return q;
 }
 
+// v = q * v * q^-1
 float3 quaternion_rotate(float3 v, float4 q)
 {
     float3 t = 2.0 * cross(q.xyz, v);
